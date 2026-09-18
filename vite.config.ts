@@ -31,7 +31,15 @@ const config = defineConfig({
   plugins: [
     signovaApiPlugin(),
     devtools(),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    nitro({
+      rollupConfig: { external: [/^@sentry\//] },
+      handlers: [
+        {
+          route: '/api/**',
+          handler: './src/server/nitro-api.ts',
+        },
+      ],
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),

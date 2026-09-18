@@ -8,39 +8,9 @@ import {
 } from './db-products.ts'
 import type { Product } from '../lib/types.ts'
 
-function sendJson(res: ServerResponse, status: number, data: any) {
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-  res.end(JSON.stringify(data))
-}
-
-async function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let body = ''
-    req.on('data', (chunk) => {
-      body += chunk
-    })
-    req.on('end', () => resolve(body))
-    req.on('error', reject)
-  })
-}
-
-async function getSessionFromReq(req: IncomingMessage) {
+async function getSessionFromHeaders(headers: Headers) {
   try {
     const { auth } = await import('../lib/auth.ts')
-    const headers = new Headers()
-    for (const [key, value] of Object.entries(req.headers)) {
-      if (value) {
-        if (Array.isArray(value)) {
-          value.forEach((v) => headers.append(key, v))
-        } else {
-          headers.set(key, value)
-        }
-      }
-    }
     return await auth.api.getSession({ headers })
   } catch (err) {
     console.error('Error reading session from request:', err)
@@ -48,196 +18,166 @@ async function getSessionFromReq(req: IncomingMessage) {
   }
 }
 
-export async function handleApiRequest(
-  req: IncomingMessage,
-  res: ServerResponse
-): Promise<boolean> {
-  const url = req.url || ''
-  const method = (req.method || 'GET').toUpperCase()
+export async function handleApiWeb(request: Request): Promise<Response> {
+  const url = new URL(request.url)
+  const pathname = url.pathname
+  const method = request.method.toUpperCase()
 
+  // Handle OPTIONS for CORS
   if (method === 'OPTIONS') {
-    sendJson(res, 204, {})
-    return true
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    })
   }
 
-  // Auth API: /api/auth/*
-  if (url.startsWith('/api/auth')) {
+  // 1. Auth API: /api/auth/*
+  if (pathname.startsWith('/api/auth')) {
     try {
       const { auth } = await import('../lib/auth.ts')
-      const host = req.headers.host || 'localhost:3000'
-      const protocol = (req.headers['x-forwarded-proto'] as string) || 'http'
-      const fullUrl = `${protocol}://${host}${url}`
-
-      let body: any = undefined
-      if (method !== 'GET' && method !== 'HEAD') {
-        const rawBody = await readBody(req)
-        if (rawBody) {
-          body = rawBody
-        }
-      }
-
-      const headers = new Headers()
-      for (const [key, value] of Object.entries(req.headers)) {
-        if (value) {
-          if (Array.isArray(value)) {
-            value.forEach((v) => headers.append(key, v))
-          } else {
-            headers.set(key, value)
-          }
-        }
-      }
-
-      const webReq = new Request(fullUrl, {
-        method,
-        headers,
-        body,
-      })
-
-      const webRes = await auth.handler(webReq)
-      res.statusCode = webRes.status
-
-      if (typeof webRes.headers.getSetCookie === 'function') {
-        const cookies = webRes.headers.getSetCookie()
-        if (cookies.length > 0) {
-          res.setHeader('Set-Cookie', cookies)
-        }
-      }
-
-      webRes.headers.forEach((val, key) => {
-        if (key.toLowerCase() !== 'set-cookie') {
-          res.setHeader(key, val)
-        }
-      })
-
-      const text = await webRes.text()
-      res.end(text)
+      return await auth.handler(request)
     } catch (err: any) {
       console.error('Error in /api/auth handler:', err)
-      sendJson(res, 500, { error: err.message || 'Auth failed' })
+      return Response.json(
+        { error: err.message || 'Auth failed' },
+        { status: 500 }
+      )
     }
-    return true
   }
 
-  // 1. Upload to SeaweedFS: POST /api/upload
-  if (url.startsWith('/api/upload') && method === 'POST') {
-    const session = await getSessionFromReq(req)
+  // 2. Upload to SeaweedFS: POST /api/upload
+  if (pathname.startsWith('/api/upload') && method === 'POST') {
+    const session = await getSessionFromHeaders(request.headers)
     if (!session) {
-      sendJson(res, 401, { error: 'Unauthorized: Please sign in to upload images' })
-      return true
+      return Response.json(
+        { error: 'Unauthorized: Please sign in to upload images' },
+        { status: 401 }
+      )
     }
     const role = (session.user as { role?: string }).role || 'user'
     if (role !== 'admin') {
-      sendJson(res, 403, { error: 'Forbidden: Admin role required to upload images' })
-      return true
+      return Response.json(
+        { error: 'Forbidden: Admin role required to upload images' },
+        { status: 403 }
+      )
     }
 
     try {
-      const raw = await readBody(req)
-      const data = JSON.parse(raw)
+      const data = await request.json()
       const uploaded = await uploadToSeaweedFS(data)
-      sendJson(res, 200, uploaded)
+      return Response.json(uploaded)
     } catch (err: any) {
       console.error('Error in /api/upload:', err)
-      sendJson(res, 500, { error: err.message || 'Upload failed' })
+      return Response.json(
+        { error: err.message || 'Upload failed' },
+        { status: 500 }
+      )
     }
-    return true
   }
 
-  // 2. Products API: /api/products
-  if (url === '/api/products' || url.startsWith('/api/products?')) {
+  // 3. Products API: /api/products
+  if (pathname === '/api/products' || pathname === '/api/products/') {
     if (method === 'GET') {
       try {
         const products = await getAllProducts()
-        sendJson(res, 200, products)
+        return Response.json(products)
       } catch (err: any) {
-        sendJson(res, 500, { error: err.message })
+        return Response.json({ error: err.message }, { status: 500 })
       }
-      return true
     }
 
     if (method === 'POST') {
-      const session = await getSessionFromReq(req)
+      const session = await getSessionFromHeaders(request.headers)
       if (!session) {
-        sendJson(res, 401, { error: 'Unauthorized: Please sign in to save products' })
-        return true
+        return Response.json(
+          { error: 'Unauthorized: Please sign in to save products' },
+          { status: 401 }
+        )
       }
       const role = (session.user as { role?: string }).role || 'user'
       if (role !== 'admin') {
-        sendJson(res, 403, { error: 'Forbidden: Admin role required to save products' })
-        return true
+        return Response.json(
+          { error: 'Forbidden: Admin role required to save products' },
+          { status: 403 }
+        )
       }
 
       try {
-        const raw = await readBody(req)
-        const product = JSON.parse(raw) as Product
+        const product = (await request.json()) as Product
         const saved = await saveProduct(product)
-        sendJson(res, 200, saved)
+        return Response.json(saved)
       } catch (err: any) {
         console.error('Error saving product in /api/products:', err)
-        sendJson(res, 500, { error: err.message })
+        return Response.json({ error: err.message }, { status: 500 })
       }
-      return true
     }
   }
 
-  // 3. Single Product: /api/products/:idOrSlug
-  if (url.startsWith('/api/products/')) {
-    const idOrSlug = url.replace('/api/products/', '').split('?')[0]
+  // 4. Single Product: /api/products/:idOrSlug
+  if (pathname.startsWith('/api/products/')) {
+    const idOrSlug = pathname.replace('/api/products/', '').split('?')[0]
 
-    if (method === 'GET') {
-      try {
-        const product = await getProductBySlug(idOrSlug)
-        if (product) {
-          sendJson(res, 200, product)
-        } else {
-          sendJson(res, 404, { error: 'Not found' })
+    if (idOrSlug) {
+      if (method === 'GET') {
+        try {
+          const product = await getProductBySlug(idOrSlug)
+          if (product) {
+            return Response.json(product)
+          }
+          return Response.json({ error: 'Not found' }, { status: 404 })
+        } catch (err: any) {
+          return Response.json({ error: err.message }, { status: 500 })
         }
-      } catch (err: any) {
-        sendJson(res, 500, { error: err.message })
-      }
-      return true
-    }
-
-    if (method === 'DELETE') {
-      const session = await getSessionFromReq(req)
-      if (!session) {
-        sendJson(res, 401, { error: 'Unauthorized: Please sign in to delete products' })
-        return true
-      }
-      const role = (session.user as { role?: string }).role || 'user'
-      if (role !== 'admin') {
-        sendJson(res, 403, { error: 'Forbidden: Admin role required to delete products' })
-        return true
       }
 
-      try {
-        const ok = await deleteProduct(idOrSlug)
-        sendJson(res, 200, { success: ok })
-      } catch (err: any) {
-        sendJson(res, 500, { error: err.message })
+      if (method === 'DELETE') {
+        const session = await getSessionFromHeaders(request.headers)
+        if (!session) {
+          return Response.json(
+            { error: 'Unauthorized: Please sign in to delete products' },
+            { status: 401 }
+          )
+        }
+        const role = (session.user as { role?: string }).role || 'user'
+        if (role !== 'admin') {
+          return Response.json(
+            { error: 'Forbidden: Admin role required to delete products' },
+            { status: 403 }
+          )
+        }
+
+        try {
+          const ok = await deleteProduct(idOrSlug)
+          return Response.json({ success: ok })
+        } catch (err: any) {
+          return Response.json({ error: err.message }, { status: 500 })
+        }
       }
-      return true
     }
   }
 
-  // 4. Orders API: /api/orders
-  if (url === '/api/orders' || url.startsWith('/api/orders?')) {
+  // 5. Orders API: /api/orders
+  if (pathname === '/api/orders' || pathname === '/api/orders/') {
     if (method === 'POST') {
       try {
-        const raw = await readBody(req)
-        const orderInput = JSON.parse(raw)
+        const orderInput = await request.json()
         const { processNewOrder } = await import('./orders.ts')
         const result = await processNewOrder(orderInput)
         if (!result.success) {
-          sendJson(res, 400, result)
-        } else {
-          sendJson(res, 201, result)
+          return Response.json(result, { status: 400 })
         }
+        return Response.json(result, { status: 201 })
       } catch (err: any) {
         console.error('Error in /api/orders POST:', err)
-        sendJson(res, 500, { success: false, error: err.message || 'Failed to submit order' })
+        return Response.json(
+          { success: false, error: err.message || 'Failed to submit order' },
+          { status: 500 }
+        )
       }
-      return true
     }
 
     if (method === 'GET') {
@@ -247,17 +187,88 @@ export async function handleApiRequest(
         const ordersFile = path.resolve(process.cwd(), 'data', 'orders.json')
         if (fs.existsSync(ordersFile)) {
           const content = fs.readFileSync(ordersFile, 'utf8')
-          sendJson(res, 200, JSON.parse(content))
-        } else {
-          sendJson(res, 200, [])
+          return Response.json(JSON.parse(content))
         }
+        return Response.json([])
       } catch (err: any) {
-        sendJson(res, 500, { error: err.message })
+        return Response.json({ error: err.message }, { status: 500 })
       }
-      return true
     }
   }
 
-  return false
+  return Response.json({ error: 'Endpoint not found' }, { status: 404 })
 }
 
+// Helper for Connect / Vite dev server middleware
+export async function handleApiRequest(
+  req: IncomingMessage,
+  res: ServerResponse
+): Promise<boolean> {
+  const url = req.url || ''
+  if (!url.startsWith('/api/')) {
+    return false
+  }
+
+  const host = req.headers.host || 'localhost:3000'
+  const protocol = (req.headers['x-forwarded-proto'] as string) || 'http'
+  const fullUrl = `${protocol}://${host}${url}`
+  const method = (req.method || 'GET').toUpperCase()
+
+  const headers = new Headers()
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (value) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => headers.append(key, v))
+      } else {
+        headers.set(key, value)
+      }
+    }
+  }
+
+  let body: BodyInit | undefined = undefined
+  if (method !== 'GET' && method !== 'HEAD') {
+    const chunks: Buffer[] = []
+    await new Promise<void>((resolve, reject) => {
+      req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)))
+      req.on('end', () => resolve())
+      req.on('error', reject)
+    })
+    if (chunks.length > 0) {
+      body = Buffer.concat(chunks)
+    }
+  }
+
+  const webReq = new Request(fullUrl, {
+    method,
+    headers,
+    body,
+    // @ts-ignore - duplex is needed for RequestInit with body in Node
+    duplex: 'half',
+  })
+
+  const webRes = await handleApiWeb(webReq)
+
+  res.statusCode = webRes.status
+
+  if (typeof (webRes.headers as any).getSetCookie === 'function') {
+    const cookies = (webRes.headers as any).getSetCookie()
+    if (cookies.length > 0) {
+      res.setHeader('Set-Cookie', cookies)
+    }
+  }
+
+  webRes.headers.forEach((val, key) => {
+    if (key.toLowerCase() !== 'set-cookie') {
+      res.setHeader(key, val)
+    }
+  })
+
+  if (webRes.body) {
+    const arrayBuffer = await webRes.arrayBuffer()
+    res.end(Buffer.from(arrayBuffer))
+  } else {
+    res.end()
+  }
+
+  return true
+}
