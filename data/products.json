@@ -1,0 +1,123 @@
+[
+  {
+    "id": "prod-aero-keyboard",
+    "title": "Aero Mechanical Keyboard - Lunar Edition",
+    "slug": "aero-mechanical-keyboard",
+    "description": "Designed for tactile precision and acoustic harmony. Featuring gasket-mounted construction, custom-tuned linear switches, a CNC machined aluminum chassis, and hot-swappable PCB for the ultimate desktop typing experience.\n\nEvery keycap is double-shot PBT with crisp legends that will never fade. Connect via ultra-low latency 2.4GHz wireless, Bluetooth 5.2, or detachable braided USB-C.",
+    "price": "$189.00",
+    "category": "Workspace",
+    "badge": "Best Seller",
+    "published": true,
+    "features": [
+      "CNC anodized 6063 aluminum chassis",
+      "Gasket mount with poron dampening foam",
+      "Custom factory-lubed linear switches (45g actuation)",
+      "Hot-swappable 3/5-pin PCB",
+      "Tri-mode connectivity: 2.4G, BT 5.2, USB-C",
+      "South-facing per-key RGB illumination"
+    ],
+    "ctaText": "Order Lunar Edition",
+    "ctaUrl": "#order",
+    "images": [
+      {
+        "id": "img-aero-1",
+        "name": "aero-hero.jpg",
+        "url": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "img-aero-2",
+        "name": "aero-detail.jpg",
+        "url": "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "img-aero-3",
+        "name": "aero-switches.jpg",
+        "url": "https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "img-aero-4",
+        "name": "aero-desk.jpg",
+        "url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80"
+      }
+    ],
+    "createdAt": "2026-09-17T10:00:00.000Z",
+    "updatedAt": "2026-09-17T10:00:00.000Z"
+  },
+  {
+    "id": "prod-solstice-pack",
+    "title": "The Solstice Everyday Daypack",
+    "slug": "solstice-everyday-daypack",
+    "description": "A minimalist daily carry tailored for creators, commuters, and weekend wanderers. Crafted from weatherproof recycled ripstop nylon with vegetable-tanned leather accents and water-resistant YKK Aquaguard zippers.\n\nIncludes an externally accessible padded compartment for laptops up to 16 inches, quick-access magnetic key leash, and ergonomic air-mesh shoulder straps for all-day comfort.",
+    "price": "$145.00",
+    "category": "Gear",
+    "badge": "Staff Pick",
+    "published": true,
+    "features": [
+      "Weatherproof 840D recycled ballistic nylon",
+      "Suspended 16-inch padded laptop pocket",
+      "Fidlock® magnetic chest buckle",
+      "Luggage pass-through handle for travel",
+      "Dual hidden water bottle pockets",
+      "Breathable contoured back padding"
+    ],
+    "ctaText": "Claim Your Daypack",
+    "ctaUrl": "#order",
+    "images": [
+      {
+        "id": "img-sol-1",
+        "name": "daypack-front.jpg",
+        "url": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "img-sol-2",
+        "name": "daypack-lifestyle.jpg",
+        "url": "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "img-sol-3",
+        "name": "daypack-details.jpg",
+        "url": "https://images.unsplash.com/photo-1581605405669-fcdf81165afa?auto=format&fit=crop&w=1200&q=80"
+      }
+    ],
+    "createdAt": "2026-09-17T11:30:00.000Z",
+    "updatedAt": "2026-09-17T11:30:00.000Z"
+  },
+  {
+    "id": "prod-artisan-dripper",
+    "title": "Kuro Artisan Ceramic Coffee Dripper",
+    "slug": "kuro-ceramic-coffee-dripper",
+    "description": "Hand-thrown in small batches using iron-rich volcanic stoneware, the Kuro Dripper optimizes water flow with geometric interior spiral ribs. Designed to draw out subtle florals and nuanced acidity from specialty light-roast coffees.\n\nComes with a solid brass base ring that rests stably on any server or standard mug.",
+    "price": "$68.00",
+    "category": "Coffee",
+    "badge": "Limited Run",
+    "published": true,
+    "features": [
+      "Hand-thrown volcanic stoneware",
+      "Precision spiral ribs for optimal extraction",
+      "Solid brushed brass stabilizing base",
+      "Compatible with standard 02 cone filters",
+      "Heat-retaining thermal ceramic mass"
+    ],
+    "ctaText": "Get the Dripper",
+    "ctaUrl": "#order",
+    "images": [
+      {
+        "id": "img-kuro-1",
+        "name": "dripper-main.jpg",
+        "url": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "img-kuro-2",
+        "name": "dripper-pour.jpg",
+        "url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "img-kuro-3",
+        "name": "dripper-detail.jpg",
+        "url": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=1200&q=80"
+      }
+    ],
+    "createdAt": "2026-09-17T12:00:00.000Z",
+    "updatedAt": "2026-09-17T12:00:00.000Z"
+  }
+]
