@@ -9,6 +9,9 @@ import {
   Maximize2,
   X,
   Cloud,
+  AlertCircle,
+  RotateCw,
+  FileWarning,
 } from 'lucide-react'
 import type { ProductImage } from '#/lib/types'
 import { optimizeImageFile } from '#/lib/image-helpers'
@@ -25,54 +28,183 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
   const [isDraggingOver, setIsDraggingOver] = React.useState(false)
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
-  const [isProcessing, setIsProcessing] = React.useState(false)
   const [previewImage, setPreviewImage] = React.useState<string | null>(null)
+  const [uploadError, setUploadError] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Upload files to SeaweedFS
+  // Cache File references for retry functionality
+  const fileMapRef = React.useRef<Map<string, File>>(new Map())
+
+  // Keep latest images in ref to avoid race conditions during async uploads
+  const imagesRef = React.useRef(images)
+  imagesRef.current = images
+
+  // Upload a single file to /api/upload
+  const uploadSingleFile = async (tempId: string, file: File) => {
+    try {
+      const { url: base64, name } = await optimizeImageFile(file)
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base64Data: base64,
+          filename: name,
+          contentType: file.type,
+        }),
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId))
+
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(errJson.error || `Upload failed with status ${res.status}`)
+      }
+
+      const uploaded = (await res.json()) as ProductImage
+
+      // Success: update the item in the list
+      const updated = imagesRef.current.map((img) =>
+        img.id === tempId
+          ? {
+              id: uploaded.id,
+              url: uploaded.url,
+              name: uploaded.name || file.name,
+              size: uploaded.size || file.size,
+              isUploading: false,
+              error: undefined,
+            }
+          : img
+      )
+      fileMapRef.current.delete(tempId)
+      onChange(updated)
+    } catch (err: any) {
+      console.error('[SeaweedFS Upload Error]', err)
+      const errorMsg =
+        err.name === 'AbortError'
+          ? 'Upload timed out. Storage server is unresponsive.'
+          : err.message || 'Failed to upload image'
+
+      setUploadError(
+        `Failed to upload '${file.name}' to storage: ${errorMsg}. Please verify your SeaweedFS or S3 endpoint configuration.`
+      )
+
+      // Mark the specific image item with error (DO NOT fallback to raw base64!)
+      const updated = imagesRef.current.map((img) =>
+        img.id === tempId
+          ? {
+              ...img,
+              isUploading: false,
+              error: errorMsg,
+            }
+          : img
+      )
+      onChange(updated)
+    }
+  }
+
+  // Handle newly selected or dropped files
   const handleFiles = async (files: FileList | File[]) => {
     const fileArray = Array.from(files).filter((f) => f.type.startsWith('image/'))
     if (fileArray.length === 0) return
 
-    setIsProcessing(true)
+    setUploadError(null)
+
+    // 1. Instantly create optimistic preview items with object URLs (0ms delay)
+    const newItems: { item: ProductImage; file: File }[] = fileArray.map((file) => {
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+      fileMapRef.current.set(tempId, file)
+      return {
+        item: {
+          id: tempId,
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: file.size,
+          isUploading: true,
+        },
+        file,
+      }
+    })
+
+    const nextImages = [...imagesRef.current, ...newItems.map((n) => n.item)]
+    onChange(nextImages)
+
+    // 2. Upload files concurrently in the background
+    await Promise.allSettled(
+      newItems.map(({ item, file }) => uploadSingleFile(item.id, file))
+    )
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // Retry a failed upload
+  const retryUpload = (id: string) => {
+    const file = fileMapRef.current.get(id)
+    if (!file) {
+      // If we don't have the original File, check if the image has a data URL to re-upload
+      const target = images.find((img) => img.id === id)
+      if (target?.url?.startsWith('data:image/')) {
+        void uploadBase64Directly(id, target.url, target.name)
+      }
+      return
+    }
+
+    setUploadError(null)
+    const updated = images.map((img) =>
+      img.id === id ? { ...img, isUploading: true, error: undefined } : img
+    )
+    onChange(updated)
+    void uploadSingleFile(id, file)
+  }
+
+  // Re-upload a base64 image (e.g. from previously saved state)
+  const uploadBase64Directly = async (id: string, base64Data: string, filename: string) => {
+    const updated = images.map((img) =>
+      img.id === id ? { ...img, isUploading: true, error: undefined } : img
+    )
+    onChange(updated)
+    setUploadError(null)
+
     try {
-      const processed: ProductImage[] = []
-      for (const file of fileArray) {
-        const { url: base64, size, name } = await optimizeImageFile(file)
-        try {
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              base64Data: base64,
-              filename: name,
-              contentType: file.type,
-            }),
-          })
-          if (res.ok) {
-            const uploaded = (await res.json()) as ProductImage
-            processed.push(uploaded)
-          } else {
-            throw new Error('Upload failed')
-          }
-        } catch (uploadErr) {
-          console.warn('SeaweedFS upload error, using local fallback:', uploadErr)
-          processed.push({
-            id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            url: base64,
-            name,
-            size,
-          })
-        }
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base64Data,
+          filename,
+        }),
+      })
+
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(errJson.error || `Upload failed with status ${res.status}`)
       }
-      onChange([...images, ...processed])
-    } catch (err) {
-      console.error('Error processing images:', err)
-    } finally {
-      setIsProcessing(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+
+      const uploaded = (await res.json()) as ProductImage
+      const finalImages = imagesRef.current.map((img) =>
+        img.id === id
+          ? {
+              id: uploaded.id,
+              url: uploaded.url,
+              name: uploaded.name || filename,
+              size: uploaded.size,
+              isUploading: false,
+              error: undefined,
+            }
+          : img
+      )
+      onChange(finalImages)
+    } catch (err: any) {
+      console.error('[Base64 Migration Error]', err)
+      setUploadError(`Failed to migrate image to S3: ${err.message}`)
+      const finalImages = imagesRef.current.map((img) =>
+        img.id === id ? { ...img, isUploading: false, error: err.message } : img
+      )
+      onChange(finalImages)
     }
   }
 
@@ -86,6 +218,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
 
   // HTML5 Drag-and-drop reordering between items
   const handleItemDragStart = (e: React.DragEvent, index: number) => {
+    if (images[index]?.isUploading) return
     setDraggedIndex(index)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', index.toString())
@@ -143,28 +276,65 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
 
   // Delete image
   const removeImage = (index: number) => {
+    const target = images[index]
+    if (target) {
+      fileMapRef.current.delete(target.id)
+    }
     const updated = images.filter((_, i) => i !== index)
     onChange(updated)
   }
 
+  const isAnyUploading = images.some((img) => img.isUploading)
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold text-foreground">
-          Images ({images.length})
-        </Label>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-semibold text-foreground">
+            Images ({images.length})
+          </Label>
+          {isAnyUploading && (
+            <Badge variant="secondary" className="gap-1 text-[11px] py-0 px-1.5 animate-pulse">
+              <RotateCw className="size-3 animate-spin text-primary" />
+              <span>Uploading to storage...</span>
+            </Badge>
+          )}
+        </div>
         {images.length > 0 && (
           <Button
             type="button"
             variant="ghost"
             size="xs"
-            onClick={() => onChange([])}
+            onClick={() => {
+              fileMapRef.current.clear()
+              onChange([])
+            }}
             className="text-xs text-destructive hover:bg-destructive/10 h-7"
           >
             Clear All
           </Button>
         )}
       </div>
+
+      {/* Error Feedback Banner */}
+      {uploadError && (
+        <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-xs flex items-start justify-between gap-2 animate-in fade-in">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="size-4 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold">Image Upload Error</p>
+              <p className="text-[11px] opacity-90 leading-relaxed">{uploadError}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="p-1 text-destructive/70 hover:text-destructive rounded"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Dropzone Area */}
       <div
@@ -198,16 +368,16 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">
-              {isProcessing ? 'Uploading to SeaweedFS...' : 'Click to select or drag images here'}
+              Click to select or drag images here
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Images are uploaded to SeaweedFS. Drag or use arrows to reorder.
+              Images are optimized and stored in SeaweedFS / S3 bucket. Drag or use arrows to reorder.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Image Gallery Grid with Reordering */}
+      {/* Image Gallery Grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-1">
           {images.map((img, idx) => {
@@ -215,13 +385,21 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
             const isLast = idx === images.length - 1
             const isBeingDragged = draggedIndex === idx
             const isDragTarget = dragOverIndex === idx
-            const isSeaweed =
-              img.url.includes('signovas3') || img.url.includes('8333') || img.url.includes('8888')
+            const isUploading = Boolean(img.isUploading)
+            const hasError = Boolean(img.error)
+            const isBase64 = img.url.startsWith('data:image/')
+            const isS3 =
+              !isBase64 &&
+              (img.url.includes('/api/images/') ||
+                img.url.includes('signovas3') ||
+                img.url.includes('8333') ||
+                img.url.includes('8888') ||
+                img.url.includes('s3'))
 
             return (
               <div
                 key={img.id}
-                draggable
+                draggable={!isUploading}
                 onDragStart={(e) => handleItemDragStart(e, idx)}
                 onDragOver={(e) => handleItemDragOver(e, idx)}
                 onDrop={(e) => handleItemDrop(e, idx)}
@@ -232,61 +410,122 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                   isDragTarget && !isBeingDragged
                     ? 'ring-2 ring-primary ring-offset-2 scale-[1.02]'
                     : ''
-                } ${isFirst ? 'border-primary ring-1 ring-primary/40 shadow-xs' : 'border-border'}`}
+                } ${
+                  hasError
+                    ? 'border-destructive ring-1 ring-destructive/40'
+                    : isFirst
+                      ? 'border-primary ring-1 ring-primary/40 shadow-xs'
+                      : 'border-border'
+                }`}
               >
-                {/* Image Preview */}
+                {/* Image Preview Container */}
                 <div className="relative aspect-4/3 w-full overflow-hidden bg-muted/30">
                   <img
                     src={img.url}
                     alt={img.name || `Image #${idx + 1}`}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className={`h-full w-full object-cover transition-transform duration-300 ${
+                      isUploading ? 'opacity-60 blur-xs' : 'group-hover:scale-105'
+                    }`}
                     loading="lazy"
                   />
 
-                  {/* Order Badge & Storage Badge */}
-                  <div className="absolute top-2 left-2 flex items-center gap-1">
-                    {isFirst ? (
-                      <Badge variant="default" className="text-[10px] font-bold shadow-xs bg-primary gap-1 px-1.5 py-0">
-                        <Star className="size-2.5 fill-amber-400 text-amber-400" />
-                        Cover
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-[10px] font-semibold bg-background/80 shadow-xs px-1.5 py-0">
-                        #{idx + 1}
-                      </Badge>
-                    )}
+                  {/* Uploading Overlay */}
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1.5 p-2 text-center">
+                      <RotateCw className="size-5 text-primary animate-spin" />
+                      <span className="text-[10px] font-semibold text-foreground">
+                        Uploading to bucket...
+                      </span>
+                    </div>
+                  )}
 
-                    {isSeaweed && (
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 bg-background/80 text-sky-600 dark:text-sky-400 border-sky-500/30 gap-0.5">
-                        <Cloud className="size-2.5" /> S3
+                  {/* Error Overlay */}
+                  {hasError && !isUploading && (
+                    <div className="absolute inset-0 bg-destructive/20 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1.5 p-2 text-center">
+                      <AlertCircle className="size-5 text-destructive" />
+                      <span className="text-[10px] font-semibold text-destructive">
+                        Upload Failed
+                      </span>
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="secondary"
+                        onClick={() => retryUpload(img.id)}
+                        className="h-6 text-[10px] px-2 gap-1 bg-background/90 hover:bg-background"
+                      >
+                        <RotateCw className="size-2.5" />
+                        Retry
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Order & Status Badges */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+                    <div className="flex items-center gap-1">
+                      {isFirst ? (
+                        <Badge
+                          variant="default"
+                          className="text-[10px] font-bold shadow-xs bg-primary gap-1 px-1.5 py-0"
+                        >
+                          <Star className="size-2.5 fill-amber-400 text-amber-400" />
+                          Cover
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] font-semibold bg-background/80 shadow-xs px-1.5 py-0"
+                        >
+                          #{idx + 1}
+                        </Badge>
+                      )}
+
+                      {isS3 && (
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1 py-0 bg-background/80 text-sky-600 dark:text-sky-400 border-sky-500/30 gap-0.5"
+                        >
+                          <Cloud className="size-2.5" /> S3
+                        </Badge>
+                      )}
+                    </div>
+
+                    {isBase64 && !isUploading && (
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-0.5"
+                        title="Stored inline as base64 string instead of bucket"
+                      >
+                        <FileWarning className="size-2.5" /> Base64
                       </Badge>
                     )}
                   </div>
 
                   {/* Drag Handle & Zoom trigger */}
-                  <div className="absolute top-2 right-2 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewImage(img.url)}
-                      title="Enlarge"
-                      className="p-1 rounded-md bg-background/80 hover:bg-background text-foreground backdrop-blur-xs transition-colors"
-                    >
-                      <Maximize2 className="size-3" />
-                    </button>
-                    <div
-                      className="p-1 rounded-md bg-background/80 text-muted-foreground backdrop-blur-xs cursor-grab active:cursor-grabbing"
-                      title="Drag to reorder"
-                    >
-                      <GripVertical className="size-3" />
+                  {!isUploading && (
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(img.url)}
+                        title="Enlarge"
+                        className="p-1 rounded-md bg-background/80 hover:bg-background text-foreground backdrop-blur-xs transition-colors"
+                      >
+                        <Maximize2 className="size-3" />
+                      </button>
+                      <div
+                        className="p-1 rounded-md bg-background/80 text-muted-foreground backdrop-blur-xs cursor-grab active:cursor-grabbing"
+                        title="Drag to reorder"
+                      >
+                        <GripVertical className="size-3" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Controls Toolbar */}
                 <div className="p-1.5 flex items-center justify-between border-t border-border/60 bg-muted/20">
                   <button
                     type="button"
-                    disabled={isFirst}
+                    disabled={isFirst || isUploading}
                     onClick={() => moveImage(idx, 'prev')}
                     title="Move earlier"
                     className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-20 disabled:pointer-events-none transition-colors"
@@ -294,11 +533,21 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                     <MoveLeft className="size-3.5" />
                   </button>
 
-                  {!isFirst ? (
+                  {isBase64 && !isUploading ? (
                     <button
                       type="button"
+                      onClick={() => uploadBase64Directly(img.id, img.url, img.name)}
+                      className="text-[10px] px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-medium transition-colors"
+                      title="Upload this base64 image into SeaweedFS bucket"
+                    >
+                      Send to S3
+                    </button>
+                  ) : !isFirst ? (
+                    <button
+                      type="button"
+                      disabled={isUploading}
                       onClick={() => setAsCover(idx)}
-                      className="text-[10px] px-1.5 py-0.5 rounded text-primary hover:bg-primary/10 font-medium transition-colors"
+                      className="text-[10px] px-1.5 py-0.5 rounded text-primary hover:bg-primary/10 font-medium transition-colors disabled:opacity-30"
                     >
                       Make Cover
                     </button>
@@ -308,7 +557,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
 
                   <button
                     type="button"
-                    disabled={isLast}
+                    disabled={isLast || isUploading}
                     onClick={() => moveImage(idx, 'next')}
                     title="Move later"
                     className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-20 disabled:pointer-events-none transition-colors"

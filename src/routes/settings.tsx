@@ -17,6 +17,7 @@ import {
   Eye,
   Info,
   BarChart3,
+  Cloud,
 } from 'lucide-react'
 import { getSessionServerFn } from '#/lib/server-auth'
 import { getProductsServerFn } from '#/lib/server-products'
@@ -110,6 +111,31 @@ function StorefrontSettingsPage() {
     text: string
   } | null>(null)
   const [showLivePreview, setShowLivePreview] = React.useState(true)
+  const [storageStatus, setStorageStatus] = React.useState<{
+    loading: boolean
+    result: {
+      ok: boolean
+      endpoint?: string
+      bucket?: string
+      latencyMs?: number
+      isConfigured?: boolean
+      error?: string
+    } | null
+  }>({ loading: false, result: null })
+
+  const handleTestStorage = async () => {
+    setStorageStatus({ loading: true, result: null })
+    try {
+      const res = await fetch('/api/storage/status')
+      const json = await res.json()
+      setStorageStatus({ loading: false, result: json })
+    } catch (err: any) {
+      setStorageStatus({
+        loading: false,
+        result: { ok: false, error: err.message || 'Connection failed' },
+      })
+    }
+  }
 
   const handleFieldChange = (
     field: keyof StorefrontSettings,
@@ -750,6 +776,121 @@ function StorefrontSettingsPage() {
                   <p className="text-[11px] text-muted-foreground">
                     Your 15-16 digit Meta Pixel ID.
                   </p>
+                </div>
+              </Card>
+
+              {/* Card 6: Storage & Media Bucket (SeaweedFS / S3) */}
+              <Card className="p-5 sm:p-6 border-border/80 shadow-xs space-y-5">
+                <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
+                      <Cloud className="size-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-base">
+                        Storage & Media Bucket (SeaweedFS / S3)
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Images uploaded for products are stored in an S3-compatible object storage bucket.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={handleTestStorage}
+                    disabled={storageStatus.loading}
+                    className="gap-1.5 text-xs h-7"
+                  >
+                    {storageStatus.loading ? (
+                      <RotateCw className="size-3 animate-spin" />
+                    ) : (
+                      <Cloud className="size-3" />
+                    )}
+                    <span>{storageStatus.loading ? 'Testing...' : 'Test Connection'}</span>
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    By default, the server connects via environment variables:{' '}
+                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_S3_ENDPOINT</code>,{' '}
+                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_ACCESS_KEY</code>,{' '}
+                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_SECRET_KEY</code>, and{' '}
+                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_BUCKET</code>.
+                  </p>
+
+                  {storageStatus.result && (
+                    <div
+                      className={`p-3.5 rounded-xl border text-xs space-y-2 animate-in fade-in ${
+                        storageStatus.result.ok
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-destructive/10 border-destructive/20 text-destructive'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-semibold">
+                        {storageStatus.result.ok ? (
+                          <>
+                            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                            <span>Storage Bucket Connected Successfully!</span>
+                            {storageStatus.result.latencyMs !== undefined && (
+                              <span className="font-mono text-[10px] opacity-80">
+                                ({storageStatus.result.latencyMs}ms)
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="size-4 text-destructive" />
+                            <span>Storage Connection Failed</span>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+                        <div>
+                          <span className="font-semibold opacity-70">Endpoint: </span>
+                          <span className="font-mono">{storageStatus.result.endpoint || 'Not set'}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold opacity-70">Bucket: </span>
+                          <span className="font-mono">{storageStatus.result.bucket || 'signovas3'}</span>
+                        </div>
+                      </div>
+
+                      {storageStatus.result.error && (
+                        <div className="p-2 rounded bg-background/50 text-[11px] font-mono leading-relaxed mt-2 border border-destructive/20">
+                          {storageStatus.result.error}
+                        </div>
+                      )}
+
+                      {!storageStatus.result.ok && (
+                        <p className="text-[11px] opacity-90 pt-1">
+                          Tip: In Coolify or Docker, ensure the app container can reach SeaweedFS. Set{' '}
+                          <code className="font-mono bg-background/60 px-1 py-0.5 rounded">
+                            SEAWEEDFS_S3_ENDPOINT=http://&lt;service-name&gt;:8333
+                          </code>{' '}
+                          in your environment variables.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Base64 Images in Database Warning */}
+                  {products.flatMap((p) => p.images || []).some((img) => img.url?.startsWith('data:image/')) && (
+                    <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200 text-xs flex items-start gap-2">
+                      <AlertCircle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-semibold">Base64 Images Detected in Database</p>
+                        <p className="text-[11px] opacity-90 leading-relaxed">
+                          One or more products currently have images stored as inline base64 strings instead of S3 bucket URLs.
+                          Once your S3 storage is connected, simply opening each product and clicking &quot;Update&quot; will automatically upload and migrate those images into your bucket!
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
 

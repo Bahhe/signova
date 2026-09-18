@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { uploadToSeaweedFS } from '../lib/seaweedfs.ts'
+import { uploadToSeaweedFS, getObjectFromSeaweedFS } from '../lib/seaweedfs.ts'
 import {
   getAllProducts,
   getProductBySlug,
@@ -49,7 +49,61 @@ export async function handleApiWeb(request: Request): Promise<Response> {
     }
   }
 
-  // 2. Upload to SeaweedFS: POST /api/upload
+  // 2. Image proxy / serving route: GET /api/images/*
+  if (pathname.startsWith('/api/images/') && method === 'GET') {
+    const key = pathname.replace(/^\/api\/images\//, '')
+    if (!key) {
+      return new Response('Not Found', { status: 404 })
+    }
+
+    try {
+      const result = await getObjectFromSeaweedFS(key)
+      if (!result) {
+        return new Response('Image Not Found', { status: 404 })
+      }
+
+      const headers = new Headers({
+        'Content-Type': result.contentType || 'image/jpeg',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      })
+      if (result.contentLength) {
+        headers.set('Content-Length', result.contentLength.toString())
+      }
+      if (result.etag) {
+        headers.set('ETag', result.etag)
+      }
+
+      return new Response(result.body, {
+        status: 200,
+        headers,
+      })
+    } catch (err: any) {
+      console.error(`[Image Proxy] Error serving image '${key}':`, err.message || err)
+      return new Response('Image Not Found', { status: 404 })
+    }
+  }
+
+  // Storage Status Diagnostic: GET /api/storage/status
+  if (pathname === '/api/storage/status' && method === 'GET') {
+    const session = await getSessionFromHeaders(request.headers)
+    if (!session) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const role = (session.user as { role?: string }).role || 'user'
+    if (role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    try {
+      const { testS3Connection } = await import('../lib/seaweedfs.ts')
+      const result = await testS3Connection()
+      return Response.json(result)
+    } catch (err: any) {
+      return Response.json({ ok: false, error: err.message || String(err) }, { status: 500 })
+    }
+  }
+
+  // 3. Upload to SeaweedFS / S3: POST /api/upload
   if (pathname.startsWith('/api/upload') && method === 'POST') {
     const session = await getSessionFromHeaders(request.headers)
     if (!session) {
@@ -68,13 +122,19 @@ export async function handleApiWeb(request: Request): Promise<Response> {
 
     try {
       const data = await request.json()
+      if (!data?.base64Data) {
+        return Response.json(
+          { error: 'Invalid payload: missing base64Data' },
+          { status: 400 }
+        )
+      }
       const uploaded = await uploadToSeaweedFS(data)
       return Response.json(uploaded)
     } catch (err: any) {
-      console.error('Error in /api/upload:', err)
+      console.error('[SeaweedFS Upload] Failed to upload image:', err.message || err)
       return Response.json(
         { error: err.message || 'Upload failed' },
-        { status: 500 }
+        { status: 502 }
       )
     }
   }

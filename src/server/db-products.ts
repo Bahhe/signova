@@ -93,6 +93,44 @@ export async function saveProduct(product: Product): Promise<Product> {
   const now = new Date()
   const productId = product.id || `prod-${Date.now()}`
 
+  // Clean images and attempt automatic migration to S3 if base64 data URL is detected
+  const cleanedImages: ProductImage[] = []
+  if (product.images && product.images.length > 0) {
+    for (const img of product.images) {
+      if (img.url && img.url.startsWith('data:image/')) {
+        try {
+          const { uploadToSeaweedFS } = await import('../lib/seaweedfs.ts')
+          const uploaded = await uploadToSeaweedFS({
+            base64Data: img.url,
+            filename: img.name || 'image.jpg',
+          })
+          cleanedImages.push({
+            id: uploaded.id,
+            name: img.name || uploaded.name,
+            url: uploaded.url,
+            size: uploaded.size,
+          })
+        } catch (uploadErr) {
+          console.warn('[saveProduct] Could not upload base64 image to S3, keeping original:', uploadErr)
+          cleanedImages.push({
+            id: img.id,
+            url: img.url,
+            name: img.name,
+            size: img.size,
+          })
+        }
+      } else {
+        // Strip transient UI properties like isUploading, error
+        cleanedImages.push({
+          id: img.id,
+          url: img.url,
+          name: img.name,
+          size: img.size,
+        })
+      }
+    }
+  }
+
   try {
     await db
       .insert(productsTable)
@@ -101,7 +139,7 @@ export async function saveProduct(product: Product): Promise<Product> {
         title: product.title,
         slug: product.slug.toLowerCase(),
         description: product.description || '',
-        images: product.images || [],
+        images: cleanedImages,
         price: product.price,
         category: product.category,
         badge: product.badge,
@@ -118,7 +156,7 @@ export async function saveProduct(product: Product): Promise<Product> {
           title: product.title,
           slug: product.slug.toLowerCase(),
           description: product.description || '',
-          images: product.images || [],
+          images: cleanedImages,
           price: product.price,
           category: product.category,
           badge: product.badge,

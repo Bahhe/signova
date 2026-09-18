@@ -176,6 +176,16 @@ export function ProductForm({
       return false
     }
 
+    if (images.some((img) => img.isUploading)) {
+      setValidationError('Please wait for images to finish uploading before saving.')
+      return false
+    }
+
+    if (images.some((img) => img.error)) {
+      setValidationError('One or more images failed to upload to storage. Please retry or remove them before saving.')
+      return false
+    }
+
     setValidationError(null)
     return true
   }
@@ -607,23 +617,25 @@ export function ProductForm({
             type="button"
             variant="outline"
             size="sm"
-            disabled={isSaving}
+            disabled={isSaving || images.some((img) => img.isUploading)}
             onClick={() => void performSave(false)}
             className="gap-1 text-xs h-8"
           >
             <Save className="size-3.5" />
             {isSaving
               ? 'Saving...'
-              : initialProduct
-                ? 'Update'
-                : 'Save Product'}
+              : images.some((img) => img.isUploading)
+                ? 'Uploading images...'
+                : initialProduct
+                  ? 'Update'
+                  : 'Save Product'}
           </Button>
 
           <Button
             type="button"
             variant="default"
             size="sm"
-            disabled={isSaving}
+            disabled={isSaving || images.some((img) => img.isUploading)}
             onClick={() => void performSave(true)}
             className="gap-1.5 text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
           >

@@ -3,6 +3,8 @@ export interface ProductImage {
   url: string
   name: string
   size?: number
+  isUploading?: boolean
+  error?: string
 }
 
 export interface Product {

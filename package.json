@@ -24,6 +24,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1134.0",
     "@faker-js/faker": "^10.3.0",
+    "@smithy/node-http-handler": "^4.12.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/match-sorter-utils": "latest",
     "@tanstack/react-devtools": "latest",

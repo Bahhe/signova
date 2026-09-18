@@ -76,12 +76,19 @@ Si vous préférez utiliser l'API officielle Google Sheets v4 avec un compte de 
 8. Récupérez l'ID de votre feuille depuis son URL :
    `https://docs.google.com/spreadsheets/d/`**`1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms`**`/edit`
 9. Dans votre `.env`, configurez :
-   ```env
-   GOOGLE_SHEET_ID=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
-   GOOGLE_SERVICE_ACCOUNT_EMAIL=order-bot@votre-projet.iam.gserviceaccount.com
-   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC6...\n-----END PRIVATE KEY-----\n"
-   GOOGLE_SHEET_RANGE=Sheet1
-   ```
+    ```env
+    GOOGLE_SHEET_ID=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
+    GOOGLE_SERVICE_ACCOUNT_EMAIL=order-bot@votre-projet.iam.gserviceaccount.com
+    GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC6...\n-----END PRIVATE KEY-----\n"
+    GOOGLE_SHEET_RANGE=Sheet1
+    ```
+    
+    > **Astuce Production (Vercel, Railway, Docker, Coolify) :**  
+    > Si vous rencontrez des difficultés avec les sauts de ligne de la clé privée, vous pouvez aussi simplement définir :
+    > ```env
+    > GOOGLE_SERVICE_ACCOUNT_KEY_JSON='{"type":"service_account","project_id":"...","private_key":"..."}'
+    > ```
+    > Ou coller le contenu JSON complet encodé en base64. Le système normalise et nettoie automatiquement les guillemets, sauts de ligne échappés (`\n` ou `\\n`) et encodages.
 
 ---
 

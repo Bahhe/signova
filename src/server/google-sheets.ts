@@ -11,6 +11,98 @@ interface GoogleCredentials {
   webhookUrl?: string
 }
 
+/**
+ * Normalize and sanitize a Google Service Account Private Key.
+ * Handles common environment variable formatting issues:
+ * - Surrounding quotes (single, double, or backticks)
+ * - Escaped newlines (\\n, \\\\n, \\r)
+ * - Base64 encoded private keys
+ * - Missing or malformed PEM line-breaks
+ * - Accidental pasting of the full JSON key into the private key variable
+ */
+export function normalizePrivateKey(rawKey?: string): string | undefined {
+  if (!rawKey) return undefined
+
+  let key = rawKey.trim()
+
+  // If the user pasted the entire service account JSON into GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+  if (key.startsWith('{') || key.includes('"private_key"')) {
+    try {
+      const parsed = JSON.parse(key)
+      if (parsed.private_key) {
+        key = parsed.private_key
+      }
+    } catch {
+      // not valid JSON, proceed as raw key
+    }
+  }
+
+  // Strip surrounding quotes (e.g. from .env file or cloud dashboard quotes)
+  while (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'")) ||
+    (key.startsWith('`') && key.endsWith('`'))
+  ) {
+    key = key.slice(1, -1).trim()
+  }
+
+  // Check if the entire key was base64 encoded (a common workaround in Vercel/Docker)
+  if (!key.includes('BEGIN') && !key.includes('\n')) {
+    try {
+      const decoded = Buffer.from(key, 'base64').toString('utf8').trim()
+      if (decoded.includes('BEGIN') && decoded.includes('PRIVATE KEY')) {
+        key = decoded
+      }
+    } catch {
+      // not base64, keep original
+    }
+  }
+
+  // Re-strip quotes if base64-decoded content had them
+  while (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'")) ||
+    (key.startsWith('`') && key.endsWith('`'))
+  ) {
+    key = key.slice(1, -1).trim()
+  }
+
+  // Replace escaped newlines (e.g. \n, \\n, \\\n, \r\n, \r)
+  key = key.replace(/\\+[nN]/g, '\n')
+  key = key.replace(/\\+[rR]/g, '\r')
+  key = key.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+
+  // Extract standard PEM headers and reconstruct clean 64-char lines
+  const beginMatch = key.match(/-----BEGIN [A-Z ]+-----/)
+  const endMatch = key.match(/-----END [A-Z ]+-----/)
+
+  if (beginMatch && endMatch) {
+    const header = beginMatch[0]
+    const footer = endMatch[0]
+    const headerIndex = key.indexOf(header)
+    const footerIndex = key.indexOf(footer)
+
+    if (headerIndex !== -1 && footerIndex !== -1 && footerIndex > headerIndex) {
+      // Clean base64 body from any stray whitespace, slashes or quotes
+      const body = key
+        .slice(headerIndex + header.length, footerIndex)
+        .replace(/[^A-Za-z0-9+/=]/g, '')
+
+      const formattedBody = body.match(/.{1,64}/g)?.join('\n') || body
+      return `${header}\n${formattedBody}\n${footer}\n`
+    }
+  }
+
+  // If user pasted only the base64 body without headers (starts with MII...)
+  const cleanedBody = key.replace(/[^A-Za-z0-9+/=]/g, '')
+  if (cleanedBody.startsWith('MII') && cleanedBody.length > 500) {
+    const formattedBody = cleanedBody.match(/.{1,64}/g)?.join('\n') || cleanedBody
+    return `-----BEGIN PRIVATE KEY-----\n${formattedBody}\n-----END PRIVATE KEY-----\n`
+  }
+
+  return key
+}
+
 function getGoogleCredentials(): GoogleCredentials {
   let clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
   let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
@@ -22,12 +114,29 @@ function getGoogleCredentials(): GoogleCredentials {
   const rawKeyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON
   if (rawKeyJson) {
     try {
-      let parsed: any
-      if (rawKeyJson.trim().startsWith('{')) {
-        parsed = JSON.parse(rawKeyJson)
-      } else if (fs.existsSync(rawKeyJson)) {
-        parsed = JSON.parse(fs.readFileSync(rawKeyJson, 'utf8'))
+      let trimmed = rawKeyJson.trim()
+      while (
+        (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ) {
+        trimmed = trimmed.slice(1, -1).trim()
       }
+
+      let parsed: any
+      if (trimmed.startsWith('{')) {
+        parsed = JSON.parse(trimmed)
+      } else if (fs.existsSync(trimmed)) {
+        parsed = JSON.parse(fs.readFileSync(trimmed, 'utf8'))
+      } else {
+        // Try base64 decoding the JSON
+        try {
+          const decoded = Buffer.from(trimmed, 'base64').toString('utf8').trim()
+          if (decoded.startsWith('{')) {
+            parsed = JSON.parse(decoded)
+          }
+        } catch {}
+      }
+
       if (parsed) {
         clientEmail = clientEmail || parsed.client_email
         privateKey = privateKey || parsed.private_key
@@ -37,9 +146,30 @@ function getGoogleCredentials(): GoogleCredentials {
     }
   }
 
+  // Check if clientEmail has JSON pasted into it
+  if (clientEmail && clientEmail.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(clientEmail.trim())
+      if (parsed.client_email) clientEmail = parsed.client_email
+      if (!privateKey && parsed.private_key) privateKey = parsed.private_key
+    } catch {}
+  }
+
+  // Check if privateKey has JSON or requires normalization
   if (privateKey) {
-    // Unescape literal newlines if stored in single-line env var
-    privateKey = privateKey.replace(/\\n/g, '\n')
+    const trimmed = privateKey.trim()
+    if (trimmed.startsWith('{') || trimmed.includes('"private_key"')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (!clientEmail && parsed.client_email) {
+          clientEmail = parsed.client_email
+        }
+        if (parsed.private_key) {
+          privateKey = parsed.private_key
+        }
+      } catch {}
+    }
+    privateKey = normalizePrivateKey(privateKey)
   }
 
   return {
@@ -72,9 +202,16 @@ async function getGoogleOAuth2AccessToken(clientEmail: string, privateKey: strin
   const encodedClaimSet = Buffer.from(JSON.stringify(claimSet)).toString('base64url')
   const unsignedToken = `${encodedHeader}.${encodedClaimSet}`
 
-  const signer = crypto.createSign('RSA-SHA256')
-  signer.update(unsignedToken)
-  const signature = signer.sign(privateKey, 'base64url')
+  let signature: string
+  try {
+    const signer = crypto.createSign('RSA-SHA256')
+    signer.update(unsignedToken)
+    signature = signer.sign(privateKey, 'base64url')
+  } catch (err: any) {
+    throw new Error(
+      `Private key sign error (${err.message}). Ensure GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY is a valid RSA private key.`
+    )
+  }
   const jwt = `${unsignedToken}.${signature}`
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -320,6 +457,19 @@ export async function submitOrderToGoogleSheets(order: Order): Promise<OrderSubm
       return result
     } catch (err: any) {
       console.error(`[Google Sheets] Failed to submit to Google Sheets:`, err.message || err)
+
+      // If Webhook fallback is available, attempt it
+      if (creds.webhookUrl) {
+        try {
+          console.log(`[Google Sheets Webhook] Attempting webhook fallback for order ${order.id}...`)
+          const webhookResult = await submitViaWebhook(order, creds.webhookUrl)
+          console.log(`[Google Sheets Webhook] Order ${order.id} forwarded successfully via fallback!`)
+          return webhookResult
+        } catch (webhookErr: any) {
+          console.error(`[Google Sheets Webhook] Fallback also failed:`, webhookErr.message || webhookErr)
+        }
+      }
+
       return {
         success: true,
         orderId: order.id,
