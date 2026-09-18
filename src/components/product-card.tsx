@@ -1,5 +1,4 @@
-import * as React from 'react'
-import { ExternalLink, Edit2, Trash2, Image as ImageIcon } from 'lucide-react'
+import { ExternalLink, Edit2, Trash2, Image as ImageIcon, EyeOff } from 'lucide-react'
 import type { Product } from '#/lib/types'
 import { Button } from './ui/button'
 
@@ -35,22 +34,51 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
           </span>
         </div>
 
-        <div className="min-w-0 space-y-0.5">
-          <h3 className="text-sm font-semibold text-foreground truncate">
-            {product.title}
-          </h3>
-          <p className="text-xs text-muted-foreground line-clamp-1">
-            {product.description || 'No description'}
-          </p>
-          <a
-            href={`/p/${product.slug}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] font-mono text-primary hover:underline"
-          >
-            /p/{product.slug}
-            <ExternalLink className="size-2.5" />
-          </a>
+        <div className="min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-semibold text-foreground truncate">
+              {product.title}
+            </h3>
+            {product.price && (
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                {product.price}
+              </span>
+            )}
+            {!product.published && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                <EyeOff className="size-2.5" />
+                Draft
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+            {product.category && (
+              <span className="px-1.5 py-0.5 rounded bg-muted font-medium text-[10px]">
+                {product.category}
+              </span>
+            )}
+            {product.badge && (
+              <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]">
+                {product.badge}
+              </span>
+            )}
+            <a
+              href={`/p/${product.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-mono text-primary hover:underline ml-1"
+            >
+              /p/{product.slug}
+              <ExternalLink className="size-2.5" />
+            </a>
+          </div>
+
+          {product.description && (
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {product.description}
+            </p>
+          )}
         </div>
       </div>
 

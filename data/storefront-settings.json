@@ -1,0 +1,23 @@
+{
+  "id": "storefront",
+  "storeName": "Signova",
+  "storeDescription": "وجهتكم الأولى للتسوق الإلكتروني الموثوق. نوفر لكم تشكيلة حصرية من أفضل المنتجات ذات الجودة العالية مع خدمة التوصيل السريع لجميع الولايات والدفع عند الاستلام.",
+  "phone": "+213 555 01 23 45",
+  "secondaryPhone": "+213 770 98 76 54",
+  "email": "contact@signova.store",
+  "location": "الجزائر العاصمة، الجزائر",
+  "locationUrl": "https://maps.google.com",
+  "workingHours": "خدمة الزبائن: 7/7 أيام من 09:00 إلى 20:00",
+  "socialLinks": {
+    "tiktok": "https://tiktok.com",
+    "twitter": "",
+    "youtube": "",
+    "facebook": "https://facebook.com",
+    "linkedin": "",
+    "telegram": "https://t.me",
+    "whatsapp": "+213555012345",
+    "instagram": "https://instagram.com"
+  },
+  "metaPixelId": "",
+  "updatedAt": "2026-09-18T13:27:05.101Z"
+}

@@ -1,26 +1,26 @@
-import type { Product } from './types'
+import type { Product } from './types.ts'
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-aero-keyboard',
-    title: 'Aero Mechanical Keyboard - Lunar Edition',
+    title: 'لوحة مفاتيح ميكانيكية إيرو - إصدار لونار',
     slug: 'aero-mechanical-keyboard',
-    description: `Designed for tactile precision and acoustic harmony. Featuring gasket-mounted construction, custom-tuned linear switches, a CNC machined aluminum chassis, and hot-swappable PCB for the ultimate desktop typing experience.
+    description: `صُممت للدقة الفائقة والتناغم الصوتي مع هيكل ألمنيوم CNC ومفاتيح خطية مخصصة لتجربة كتابة استثنائية على مكتبك.
 
-Every keycap is double-shot PBT with crisp legends that will never fade. Connect via ultra-low latency 2.4GHz wireless, Bluetooth 5.2, or detachable braided USB-C.`,
-    price: '$189.00',
-    category: 'Workspace',
-    badge: 'Best Seller',
+أغطية مفاتيح PBT متينة بنقش مزدوج مقاوم للتآكل. تدعم التوصيل اللاسلكي فائق السرعة 2.4 جيجاهرتز، وبلوتوث 5.2، وسلك USB-C قابل للفصل.`,
+    price: '24,500 دج',
+    category: 'مساحة العمل',
+    badge: 'الأكثر مبيعاً',
     published: true,
     features: [
-      'CNC anodized 6063 aluminum chassis',
-      'Gasket mount with poron dampening foam',
-      'Custom factory-lubed linear switches (45g actuation)',
-      'Hot-swappable 3/5-pin PCB',
-      'Tri-mode connectivity: 2.4G, BT 5.2, USB-C',
-      'South-facing per-key RGB illumination',
+      'هيكل متين من الألمنيوم 6063 المصقول بتقنية CNC',
+      'نظام تثبيت حشايا مرن (Gasket Mount) مع عزل صوتي متقدم',
+      'مفاتيح خطية مشحمة مصنعياً لاستجابة ناعمة وسريعة',
+      'لوحة إلكترونية قابلة للتبديل السريع (Hot-swappable 3/5-pin)',
+      'اتصال ثلاثي الأوضاع: 2.4G لاسلكي، وبلوتوث 5.2، وUSB-C',
+      'إضاءة RGB خلفية قابلة للتخصيص بالكامل',
     ],
-    ctaText: 'Order Lunar Edition',
+    ctaText: 'اطلب إصدار لونار الآن',
     ctaUrl: '#order',
     images: [
       {
@@ -49,24 +49,24 @@ Every keycap is double-shot PBT with crisp legends that will never fade. Connect
   },
   {
     id: 'prod-solstice-pack',
-    title: 'The Solstice Everyday Daypack',
+    title: 'حقيبة الظهر اليومية سولستيس',
     slug: 'solstice-everyday-daypack',
-    description: `A minimalist daily carry tailored for creators, commuters, and weekend wanderers. Crafted from weatherproof recycled ripstop nylon with vegetable-tanned leather accents and water-resistant YKK Aquaguard zippers.
+    description: `حقيبة يومية عصرية ومقاومة للعوامل الجوية مصممة خصيصاً للمبدعين والمسافرين. مصنوعة من نسيج نايلون معاد تدويره عالي المتانة مع لمسات جلدية طبيعية وسحابات YKK المقاومة للماء.
 
-Includes an externally accessible padded compartment for laptops up to 16 inches, quick-access magnetic key leash, and ergonomic air-mesh shoulder straps for all-day comfort.`,
-    price: '$145.00',
-    category: 'Gear',
-    badge: 'Staff Pick',
+تحتوي على حجرة مبطنة محمية مخصصة للحواسيب المحمولة حتى 16 بوصة، مع أحزمة كتف شبكية مريحة للاستخدام طوال اليوم.`,
+    price: '18,900 دج',
+    category: 'معدات وحقائب',
+    badge: 'اختيار مميز',
     published: true,
     features: [
-      'Weatherproof 840D recycled ballistic nylon',
-      'Suspended 16-inch padded laptop pocket',
-      'Fidlock® magnetic chest buckle',
-      'Luggage pass-through handle for travel',
-      'Dual hidden water bottle pockets',
-      'Breathable contoured back padding',
+      'قماش نايلون 840D معاد تدويره ومقاوم للظروف الجوية',
+      'جيب مبطن ومعلق لحماية الكمبيوتر المحمول حتى 16 بوصة',
+      'مشبك صدري مغناطيسي Fidlock® للإغلاق السريع',
+      'حزام خلفي للتثبيت على حقائب السفر بعجلات',
+      'جيوب جانبية مخفية لحمل قارورة الماء بأمان',
+      'بطانة خلفية مريحة وقابلة للتهوية لمنع التعرق',
     ],
-    ctaText: 'Claim Your Daypack',
+    ctaText: 'احصل على حقيبتك الآن',
     ctaUrl: '#order',
     images: [
       {
@@ -90,23 +90,23 @@ Includes an externally accessible padded compartment for laptops up to 16 inches
   },
   {
     id: 'prod-artisan-dripper',
-    title: 'Kuro Artisan Ceramic Coffee Dripper',
+    title: 'قمع تقطير القهوة الخزفي الحرفي كورو',
     slug: 'kuro-ceramic-coffee-dripper',
-    description: `Hand-thrown in small batches using iron-rich volcanic stoneware, the Kuro Dripper optimizes water flow with geometric interior spiral ribs. Designed to draw out subtle florals and nuanced acidity from specialty light-roast coffees.
+    description: `مصنوع يدوياً على دفعات صغيرة من الخزف البركاني الغني بالمعادن. يعمل قمع كورو على موازنة تدفق الماء بفضل الزعانف الحلزونية الدقيقة لاستخلاص أعمق النكهات العطرية من القهوة المختصة.
 
-Comes with a solid brass base ring that rests stably on any server or standard mug.`,
-    price: '$68.00',
-    category: 'Coffee',
-    badge: 'Limited Run',
+يأتي مع قاعدة نحاسية مذهبة تثبت بإحكام على أي إبريق أو كوب تقديم.`,
+    price: '8,900 دج',
+    category: 'مستلزمات القهوة',
+    badge: 'إصدار محدود',
     published: true,
     features: [
-      'Hand-thrown volcanic stoneware',
-      'Precision spiral ribs for optimal extraction',
-      'Solid brushed brass stabilizing base',
-      'Compatible with standard 02 cone filters',
-      'Heat-retaining thermal ceramic mass',
+      'خزف حجري بركاني مصنوع ومشكل يدوياً',
+      'أضلاع حلزونية هندسية لاستخلاص مثالي متوازن',
+      'قاعدة تثبيت متينة من النحاس المصقول المقاوم للصدأ',
+      'متوافق مع فلاتر القهوة المخروطية القياسية مقاس 02',
+      'احتفاظ حراري ممتاز لاستقرار درجة حرارة التقطير',
     ],
-    ctaText: 'Get the Dripper',
+    ctaText: 'اطلب القمع الآن',
     ctaUrl: '#order',
     images: [
       {

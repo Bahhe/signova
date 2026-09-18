@@ -1,4 +1,5 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig } from 'vite'
+import type { Plugin } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
@@ -10,7 +11,7 @@ function signovaApiPlugin(): Plugin {
     name: 'signova-api-middleware',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (req.url && req.url.startsWith('/api/') && !req.url.startsWith('/api/auth')) {
+        if (req.url && req.url.startsWith('/api/')) {
           try {
             const { handleApiRequest } = await import('./src/server/api-middleware.ts')
             const handled = await handleApiRequest(req, res)

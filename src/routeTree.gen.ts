@@ -10,13 +10,54 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PixelRouteImport } from './routes/pixel'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ThankYouRouteImport } from './routes/thank-you'
+import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as PIndexRouteImport } from './routes/p/index'
 import { Route as PSlugRouteImport } from './routes/p/$slug'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PixelRoute = PixelRouteImport.update({
+  id: '/pixel',
+  path: '/pixel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThankYouRoute = ThankYouRouteImport.update({
+  id: '/thank-you',
+  path: '/thank-you',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnauthorizedRoute = UnauthorizedRouteImport.update({
+  id: '/unauthorized',
+  path: '/unauthorized',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PIndexRoute = PIndexRouteImport.update({
@@ -29,44 +70,94 @@ const PSlugRoute = PSlugRouteImport.update({
   path: '/p/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/pixel': typeof PixelRoute
+  '/settings': typeof SettingsRoute
+  '/thank-you': typeof ThankYouRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/users': typeof UsersRoute
   '/p/$slug': typeof PSlugRoute
   '/p/': typeof PIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/pixel': typeof PixelRoute
+  '/settings': typeof SettingsRoute
+  '/thank-you': typeof ThankYouRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/users': typeof UsersRoute
   '/p/$slug': typeof PSlugRoute
   '/p': typeof PIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/pixel': typeof PixelRoute
+  '/settings': typeof SettingsRoute
+  '/thank-you': typeof ThankYouRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/users': typeof UsersRoute
   '/p/$slug': typeof PSlugRoute
   '/p/': typeof PIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/p/$slug' | '/p/' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/pixel'
+    | '/settings'
+    | '/thank-you'
+    | '/unauthorized'
+    | '/users'
+    | '/p/$slug'
+    | '/p/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/p/$slug' | '/p' | '/api/auth/$'
-  id: '__root__' | '/' | '/p/$slug' | '/p/' | '/api/auth/$'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/pixel'
+    | '/settings'
+    | '/thank-you'
+    | '/unauthorized'
+    | '/users'
+    | '/p/$slug'
+    | '/p'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/pixel'
+    | '/settings'
+    | '/thank-you'
+    | '/unauthorized'
+    | '/users'
+    | '/p/$slug'
+    | '/p/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  LoginRoute: typeof LoginRoute
+  PixelRoute: typeof PixelRoute
+  SettingsRoute: typeof SettingsRoute
+  ThankYouRoute: typeof ThankYouRoute
+  UnauthorizedRoute: typeof UnauthorizedRoute
+  UsersRoute: typeof UsersRoute
   PSlugRoute: typeof PSlugRoute
   PIndexRoute: typeof PIndexRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +167,55 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pixel': {
+      id: '/pixel'
+      path: '/pixel'
+      fullPath: '/pixel'
+      preLoaderRoute: typeof PixelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thank-you': {
+      id: '/thank-you'
+      path: '/thank-you'
+      fullPath: '/thank-you'
+      preLoaderRoute: typeof ThankYouRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unauthorized': {
+      id: '/unauthorized'
+      path: '/unauthorized'
+      fullPath: '/unauthorized'
+      preLoaderRoute: typeof UnauthorizedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/p/': {
@@ -92,21 +232,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  LoginRoute: LoginRoute,
+  PixelRoute: PixelRoute,
+  SettingsRoute: SettingsRoute,
+  ThankYouRoute: ThankYouRoute,
+  UnauthorizedRoute: UnauthorizedRoute,
+  UsersRoute: UsersRoute,
   PSlugRoute: PSlugRoute,
   PIndexRoute: PIndexRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
