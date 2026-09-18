@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "generate-routes": "tsr generate",
-    "build": "vite build",
-    "start": "pnpm db:push && node .output/server/index.mjs",
+    "build": "pnpm db:push && vite build",
+    "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
