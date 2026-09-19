@@ -1,7 +1,13 @@
 import { eq, desc } from 'drizzle-orm'
 import { db } from '#/db/index'
-import { products as productsTable, type DbProduct } from '#/db/schema.ts'
-import type { Product, ProductImage } from '../lib/types.ts'
+import { products as productsTable  } from '#/db/schema.ts'
+import type {DbProduct} from '#/db/schema.ts';
+import type {
+  Product,
+  ProductImage,
+  ProductVariant,
+  ProductVariantOption,
+} from '../lib/types.ts'
 import { INITIAL_PRODUCTS } from '../lib/sample-data.ts'
 
 function mapDbToProduct(row: DbProduct): Product {
@@ -10,7 +16,7 @@ function mapDbToProduct(row: DbProduct): Product {
     title: row.title,
     slug: row.slug,
     description: row.description,
-    images: (row.images as ProductImage[]) || [],
+    images: (row.images) || [],
     price: row.price || undefined,
     category: row.category || undefined,
     badge: row.badge || undefined,
@@ -18,6 +24,8 @@ function mapDbToProduct(row: DbProduct): Product {
     ctaText: row.ctaText || 'Order Now',
     ctaUrl: row.ctaUrl || '#order',
     published: row.published,
+    variants: (row.variants) || [],
+    variantOptions: (row.variantOptions) || [],
     createdAt: row.createdAt
       ? row.createdAt.toISOString()
       : new Date().toISOString(),
@@ -49,6 +57,8 @@ async function ensureSeed(): Promise<void> {
           ctaText: p.ctaText,
           ctaUrl: p.ctaUrl,
           published: p.published,
+          variants: p.variants || [],
+          variantOptions: p.variantOptions || [],
           createdAt: new Date(p.createdAt),
           updatedAt: new Date(p.updatedAt),
         })
@@ -158,6 +168,8 @@ export async function saveProduct(product: Product): Promise<Product> {
         ctaText: product.ctaText || 'Order Now',
         ctaUrl: product.ctaUrl || '#order',
         published: product.published !== undefined ? product.published : true,
+        variants: product.variants || [],
+        variantOptions: product.variantOptions || [],
         createdAt: product.createdAt ? new Date(product.createdAt) : now,
         updatedAt: now,
       })
@@ -175,6 +187,8 @@ export async function saveProduct(product: Product): Promise<Product> {
           ctaText: product.ctaText || 'Order Now',
           ctaUrl: product.ctaUrl || '#order',
           published: product.published !== undefined ? product.published : true,
+          variants: product.variants || [],
+          variantOptions: product.variantOptions || [],
           updatedAt: now,
         },
       })

@@ -40,6 +40,68 @@
         "url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80"
       }
     ],
+    "variantOptions": [
+      {
+        "id": "opt-aero-color",
+        "name": "اللون",
+        "values": ["رمادي قمري", "أسود كربوني"]
+      },
+      {
+        "id": "opt-aero-switch",
+        "name": "نوع المفاتيح",
+        "values": ["خطية صامتة (Linear)", "لمسية ميكانيكية (Tactile)"]
+      }
+    ],
+    "variants": [
+      {
+        "id": "var-aero-1",
+        "title": "رمادي قمري / خطية صامتة (Linear)",
+        "price": "24,500 دج",
+        "inStock": true,
+        "imageId": "img-aero-1",
+        "imageUrl": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=1200&q=80",
+        "options": {
+          "اللون": "رمادي قمري",
+          "نوع المفاتيح": "خطية صامتة (Linear)"
+        }
+      },
+      {
+        "id": "var-aero-2",
+        "title": "رمادي قمري / لمسية ميكانيكية (Tactile)",
+        "price": "24,500 دج",
+        "inStock": true,
+        "imageId": "img-aero-2",
+        "imageUrl": "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=1200&q=80",
+        "options": {
+          "اللون": "رمادي قمري",
+          "نوع المفاتيح": "لمسية ميكانيكية (Tactile)"
+        }
+      },
+      {
+        "id": "var-aero-3",
+        "title": "أسود كربوني / خطية صامتة (Linear)",
+        "price": "25,900 دج",
+        "inStock": true,
+        "imageId": "img-aero-3",
+        "imageUrl": "https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=1200&q=80",
+        "options": {
+          "اللون": "أسود كربوني",
+          "نوع المفاتيح": "خطية صامتة (Linear)"
+        }
+      },
+      {
+        "id": "var-aero-4",
+        "title": "أسود كربوني / لمسية ميكانيكية (Tactile)",
+        "price": "25,900 دج",
+        "inStock": true,
+        "imageId": "img-aero-4",
+        "imageUrl": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+        "options": {
+          "اللون": "أسود كربوني",
+          "نوع المفاتيح": "لمسية ميكانيكية (Tactile)"
+        }
+      }
+    ],
     "createdAt": "2026-09-17T10:00:00.000Z",
     "updatedAt": "2026-09-17T10:00:00.000Z"
   },
@@ -77,6 +139,37 @@
         "id": "img-sol-3",
         "name": "daypack-details.jpg",
         "url": "https://images.unsplash.com/photo-1581605405669-fcdf81165afa?auto=format&fit=crop&w=1200&q=80"
+      }
+    ],
+    "variantOptions": [
+      {
+        "id": "opt-sol-color",
+        "name": "اللون",
+        "values": ["أسود ليلي", "أخضر جبلي"]
+      }
+    ],
+    "variants": [
+      {
+        "id": "var-sol-1",
+        "title": "أسود ليلي",
+        "price": "18,900 دج",
+        "inStock": true,
+        "imageId": "img-sol-1",
+        "imageUrl": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=80",
+        "options": {
+          "اللون": "أسود ليلي"
+        }
+      },
+      {
+        "id": "var-sol-2",
+        "title": "أخضر جبلي",
+        "price": "19,500 دج",
+        "inStock": true,
+        "imageId": "img-sol-2",
+        "imageUrl": "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&w=1200&q=80",
+        "options": {
+          "اللون": "أخضر جبلي"
+        }
       }
     ],
     "createdAt": "2026-09-17T11:30:00.000Z",

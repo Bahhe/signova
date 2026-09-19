@@ -12,9 +12,10 @@ import {
   ShieldCheck,
   Package,
   Clock,
+  Layers,
 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
-import type { Product, DeliveryType } from '#/lib/types'
+import type { Product, ProductVariant, DeliveryType } from '#/lib/types'
 import { getWilayas, getCommunesForWilaya } from '#/lib/algeria-locations'
 import { submitOrderServerFn } from '#/lib/server-orders'
 import { parseNumericPrice } from '#/lib/meta-pixel'
@@ -24,12 +25,44 @@ import { Label } from './ui/label'
 
 interface OrderFormProps {
   product: Product
+  selectedVariant?: ProductVariant | null
+  onSelectVariant?: (variant: ProductVariant) => void
   className?: string
 }
 
-export function OrderForm({ product, className = '' }: OrderFormProps) {
+export function OrderForm({
+  product,
+  selectedVariant: propSelectedVariant,
+  onSelectVariant,
+  className = '',
+}: OrderFormProps) {
   const navigate = useNavigate()
   const wilayas = React.useMemo(() => getWilayas(), [])
+
+  // Variant State
+  const [internalVariant, setInternalVariant] =
+    React.useState<ProductVariant | null>(
+      () =>
+        propSelectedVariant ??
+        (product.variants && product.variants.length > 0
+          ? product.variants[0]
+          : null),
+    )
+
+  React.useEffect(() => {
+    if (propSelectedVariant !== undefined) {
+      setInternalVariant(propSelectedVariant)
+    }
+  }, [propSelectedVariant])
+
+  const activeVariant =
+    propSelectedVariant ??
+    internalVariant ??
+    (product.variants && product.variants.length > 0
+      ? product.variants[0]
+      : null)
+
+  const effectivePrice = activeVariant?.price || product.price
 
   // Form State
   const [fullName, setFullName] = React.useState('')
@@ -62,33 +95,49 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
     setSelectedCommune('')
   }
 
-  // Calculate dynamic total
+  // Calculate dynamic total using effective variant price
   const calculateTotal = React.useCallback(() => {
-    if (!product.price) return null
-    const numericStr = product.price.replace(/[^\d.]/g, '')
+    if (!effectivePrice) return null
+    const numericStr = effectivePrice.replace(/[^\d.]/g, '')
     const numeric = parseFloat(numericStr)
-    if (isNaN(numeric) || numeric <= 0) return product.price
+    if (isNaN(numeric) || numeric <= 0) return effectivePrice
     const total = numeric * quantity
     if (
-      /dzd/i.test(product.price) ||
-      /da/i.test(product.price) ||
-      /دج/i.test(product.price) ||
-      /د\.ج/i.test(product.price)
+      /dzd/i.test(effectivePrice) ||
+      /da/i.test(effectivePrice) ||
+      /دج/i.test(effectivePrice) ||
+      /د\.ج/i.test(effectivePrice)
     ) {
       return `${total.toLocaleString('fr-FR')} دج`
     }
-    if (/[$€£]/.test(product.price)) {
-      const symbol = product.price.match(/[$€£]/)?.[0] || ''
+    if (/[$€£]/.test(effectivePrice)) {
+      const symbol = effectivePrice.match(/[$€£]/)?.[0] || ''
       return `${total.toLocaleString('fr-FR')} ${symbol}`
     }
     return `${total.toLocaleString('fr-FR')} دج`
-  }, [product.price, quantity])
+  }, [effectivePrice, quantity])
 
   const totalDisplay = calculateTotal()
+
+  const handleVariantSelect = (v: ProductVariant) => {
+    setInternalVariant(v)
+    if (onSelectVariant) {
+      onSelectVariant(v)
+    }
+    setError(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Check variant stock
+    if (activeVariant && activeVariant.inStock === false) {
+      setError(
+        'نعتذر، الخيار المحدد غير متوفر حالياً في المخزون. يرجى اختيار خيار آخر.',
+      )
+      return
+    }
 
     // Form validation
     if (!fullName.trim()) {
@@ -129,15 +178,17 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
           deliveryType,
           productId: product.id,
           productTitle: product.title,
-          productPrice: product.price,
+          productPrice: effectivePrice,
           quantity,
           notes: notes.trim(),
+          variantId: activeVariant?.id,
+          variantTitle: activeVariant?.title,
         },
       })
 
       if (res.success) {
         const confirmedOrderId = res.orderId || 'ORD-CONFIRMED'
-        const numericTotal = parseNumericPrice(product.price) * quantity
+        const numericTotal = parseNumericPrice(effectivePrice) * quantity
 
         setOrderSuccess({
           orderId: confirmedOrderId,
@@ -150,7 +201,7 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
             orderId: confirmedOrderId,
             productId: product.id,
             productTitle: product.title,
-            price: product.price || '',
+            price: effectivePrice || '',
             quantity,
             total: totalDisplay || '',
             value: numericTotal,
@@ -160,6 +211,7 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
             phone: cleanPhone,
             wilaya: wilayaFormatted,
             commune: selectedCommune,
+            variantTitle: activeVariant?.title,
           },
         })
         return
@@ -176,16 +228,18 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
             deliveryType,
             productId: product.id,
             productTitle: product.title,
-            productPrice: product.price,
+            productPrice: effectivePrice,
             quantity,
             notes: notes.trim(),
+            variantId: activeVariant?.id,
+            variantTitle: activeVariant?.title,
           }),
         })
 
         const data = await apiRes.json()
         if (apiRes.ok && data.success) {
           const confirmedOrderId = data.orderId || 'ORD-CONFIRMED'
-          const numericTotal = parseNumericPrice(product.price) * quantity
+          const numericTotal = parseNumericPrice(effectivePrice) * quantity
 
           setOrderSuccess({
             orderId: confirmedOrderId,
@@ -198,7 +252,7 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
               orderId: confirmedOrderId,
               productId: product.id,
               productTitle: product.title,
-              price: product.price || '',
+              price: effectivePrice || '',
               quantity,
               total: totalDisplay || '',
               value: numericTotal,
@@ -208,6 +262,7 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
               phone: cleanPhone,
               wilaya: wilayaFormatted,
               commune: selectedCommune,
+              variantTitle: activeVariant?.title,
             },
           })
           return
@@ -232,15 +287,17 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
             deliveryType,
             productId: product.id,
             productTitle: product.title,
-            productPrice: product.price,
+            productPrice: effectivePrice,
             quantity,
             notes: notes.trim(),
+            variantId: activeVariant?.id,
+            variantTitle: activeVariant?.title,
           }),
         })
         const data = await apiRes.json()
         if (apiRes.ok && data.success) {
           const confirmedOrderId = data.orderId || 'ORD-CONFIRMED'
-          const numericTotal = parseNumericPrice(product.price) * quantity
+          const numericTotal = parseNumericPrice(effectivePrice) * quantity
 
           setOrderSuccess({
             orderId: confirmedOrderId,
@@ -253,7 +310,7 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
               orderId: confirmedOrderId,
               productId: product.id,
               productTitle: product.title,
-              price: product.price || '',
+              price: effectivePrice || '',
               quantity,
               total: totalDisplay || '',
               value: numericTotal,
@@ -263,6 +320,7 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
               phone: cleanPhone,
               wilaya: wilayaFormatted,
               commune: selectedCommune,
+              variantTitle: activeVariant?.title,
             },
           })
           return
@@ -323,6 +381,14 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
               {product.title} (x{quantity})
             </span>
           </div>
+          {activeVariant && (
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">الخيار / الموديل:</span>
+              <span className="font-bold text-foreground">
+                {activeVariant.title}
+              </span>
+            </div>
+          )}
           {totalDisplay && (
             <div className="flex justify-between items-center text-xs">
               <span className="text-muted-foreground">المبلغ الإجمالي:</span>
@@ -385,6 +451,71 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Variant Selection if product has variants */}
+        {product.variants && product.variants.length > 0 && (
+          <div className="space-y-2 p-3.5 rounded-xl border border-border/80 bg-muted/20">
+            <Label className="text-xs font-semibold flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Layers className="size-3.5 text-primary" />
+                <span>الموديل / الخيار المطلوب:</span>
+              </span>
+              {activeVariant && (
+                <span className="text-[11px] font-bold text-primary">
+                  {activeVariant.title}
+                </span>
+              )}
+            </Label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+              {product.variants.map((v) => {
+                const isSelected = activeVariant?.id === v.id
+                const isOutOfStock = v.inStock === false
+
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    disabled={isOutOfStock}
+                    onClick={() => handleVariantSelect(v)}
+                    className={`flex items-center justify-between p-2.5 rounded-lg border text-right transition-all text-xs ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 ring-1 ring-primary font-bold text-foreground'
+                        : isOutOfStock
+                          ? 'border-border/60 bg-muted/10 opacity-50 cursor-not-allowed text-muted-foreground'
+                          : 'border-border bg-card hover:bg-muted/40 text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={`size-2 rounded-full shrink-0 ${
+                          isSelected
+                            ? 'bg-primary'
+                            : isOutOfStock
+                              ? 'bg-muted-foreground'
+                              : 'bg-border'
+                        }`}
+                      />
+                      <span className="truncate">{v.title}</span>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-1.5 mr-2">
+                      {v.price && (
+                        <span className="font-semibold text-primary text-[11px]">
+                          {v.price}
+                        </span>
+                      )}
+                      {isOutOfStock && (
+                        <span className="text-[10px] text-destructive font-medium">
+                          (نفد)
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
         {/* Full Name & Phone Number */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -622,11 +753,20 @@ export function OrderForm({ product, className = '' }: OrderFormProps) {
             </span>
           </div>
 
-          {product.price && (
+          {activeVariant && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>الخيار / الموديل:</span>
+              <span className="font-bold text-foreground">
+                {activeVariant.title}
+              </span>
+            </div>
+          )}
+
+          {effectivePrice && (
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>سعر الوحدة:</span>
               <span className="font-semibold text-foreground">
-                {product.price} دج
+                {effectivePrice} دج
               </span>
             </div>
           )}

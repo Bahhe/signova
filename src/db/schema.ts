@@ -6,7 +6,12 @@ import {
   boolean,
   jsonb,
 } from 'drizzle-orm/pg-core'
-import type { ProductImage, StorefrontSocialLinks } from '#/lib/types'
+import type {
+  ProductImage,
+  StorefrontSocialLinks,
+  ProductVariant,
+  ProductVariantOption,
+} from '#/lib/types'
 
 export const todos = pgTable('todos', {
   id: serial('id').primaryKey(),
@@ -27,6 +32,11 @@ export const products = pgTable('products', {
   ctaText: text('cta_text').default('Order Now'),
   ctaUrl: text('cta_url').default('#order'),
   published: boolean('published').notNull().default(true),
+  variants: jsonb('variants').$type<ProductVariant[]>().notNull().default([]),
+  variantOptions: jsonb('variant_options')
+    .$type<ProductVariantOption[]>()
+    .notNull()
+    .default([]),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

@@ -4,6 +4,7 @@ import {
   Trash2,
   Image as ImageIcon,
   EyeOff,
+  Layers,
 } from 'lucide-react'
 import type { Product } from '#/lib/types'
 import { Button } from './ui/button'
@@ -15,8 +16,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
-  const coverImage = product.images?.[0]
-  const imageCount = product.images?.length || 0
+  const coverImage = product.images[0] as ProductImage | undefined
+  const imageCount = product.images.length
 
   return (
     <div className="group flex items-center justify-between gap-4 p-3.5 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors shadow-xs">
@@ -67,6 +68,13 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
             {product.badge && (
               <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]">
                 {product.badge}
+              </span>
+            )}
+            {product.variants && product.variants.length > 0 && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium text-[10px]">
+                <Layers className="size-2.5" />
+                {product.variants.length}{' '}
+                {product.variants.length === 1 ? 'variant' : 'variants'}
               </span>
             )}
             <a

@@ -362,7 +362,9 @@ async function submitViaServiceAccount(
     order.deliveryType === 'home delivery'
       ? 'Home Delivery (À Domicile)'
       : 'Stop Desk (Point Relais)',
-    order.productTitle,
+    order.variantTitle
+      ? `${order.productTitle} (${order.variantTitle})`
+      : order.productTitle,
     order.productPrice || 'N/A',
     order.quantity,
     order.totalAmount,
@@ -427,6 +429,7 @@ async function submitViaWebhook(
     commune: order.commune,
     deliveryType: order.deliveryType,
     productTitle: order.productTitle,
+    variantTitle: order.variantTitle || '',
     productPrice: order.productPrice || '',
     quantity: order.quantity,
     totalAmount: order.totalAmount,

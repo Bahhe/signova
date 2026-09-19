@@ -14,8 +14,14 @@ import {
   EyeOff,
   LayoutDashboard,
   Store,
+  Layers,
 } from 'lucide-react'
-import type { Product, ProductImage, StorefrontSettings } from '#/lib/types'
+import type {
+  Product,
+  ProductImage,
+  ProductVariant,
+  StorefrontSettings,
+} from '#/lib/types'
 import { authClient } from '#/lib/auth-client'
 import {
   initMetaPixel,
@@ -46,6 +52,20 @@ export function ProductPageView({
     (session?.user as { role?: string } | undefined)?.role === 'admin'
   const isUserAdmin = isAdminProp ?? sessionIsAdmin
 
+  // Variants State
+  const hasVariants = Boolean(product.variants && product.variants.length > 0)
+  const [selectedVariant, setSelectedVariant] =
+    React.useState<ProductVariant | null>(() =>
+      hasVariants ? product.variants![0] : null,
+    )
+  const [selectedOptions, setSelectedOptions] = React.useState<
+    Record<string, string>
+  >(() =>
+    hasVariants && product.variants![0]?.options
+      ? { ...product.variants![0].options }
+      : {},
+  )
+
   const [selectedImageIndex, setSelectedImageIndex] = React.useState(0)
   const [lightboxOpen, setLightboxOpen] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
@@ -58,8 +78,8 @@ export function ProductPageView({
   const mouseStartX = React.useRef(0)
 
   const images = product.images
-  const currentImage: ProductImage | undefined =
-    images[selectedImageIndex] ?? images[0]
+  const currentImage = (images[selectedImageIndex] ??
+    images[0]) as ProductImage | undefined
 
   React.useEffect(() => {
     if (selectedImageIndex >= images.length) {
@@ -103,6 +123,55 @@ export function ProductPageView({
     if (images.length <= 1) return
     setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length)
   }, [images.length])
+
+  // Variant handlers
+  const handleOptionSelect = React.useCallback(
+    (optionName: string, value: string) => {
+      const nextOptions = { ...selectedOptions, [optionName]: value }
+      setSelectedOptions(nextOptions)
+
+      if (!product.variants || product.variants.length === 0) return
+
+      const matched = product.variants.find((v) => {
+        if (!v.options) return false
+        return Object.entries(nextOptions).every(
+          ([k, val]) => v.options?.[k] === val,
+        )
+      })
+
+      if (matched) {
+        setSelectedVariant(matched)
+        if (matched.imageId) {
+          const idx = images.findIndex((img) => img.id === matched.imageId)
+          if (idx >= 0) setSelectedImageIndex(idx)
+        } else if (matched.imageUrl) {
+          const idx = images.findIndex((img) => img.url === matched.imageUrl)
+          if (idx >= 0) setSelectedImageIndex(idx)
+        }
+      }
+    },
+    [images, product.variants, selectedOptions],
+  )
+
+  const handleDirectVariantSelect = React.useCallback(
+    (v: ProductVariant) => {
+      setSelectedVariant(v)
+      if (v.options) {
+        setSelectedOptions(v.options)
+      }
+      if (v.imageId) {
+        const idx = images.findIndex((img) => img.id === v.imageId)
+        if (idx >= 0) setSelectedImageIndex(idx)
+      } else if (v.imageUrl) {
+        const idx = images.findIndex((img) => img.url === v.imageUrl)
+        if (idx >= 0) setSelectedImageIndex(idx)
+      }
+    },
+    [images],
+  )
+
+  const activePrice = selectedVariant?.price || product.price
+  const isOutOfStock = selectedVariant?.inStock === false
 
   // Keyboard navigation: Left key goes back/prev, Right key goes forward/next
   React.useEffect(() => {
@@ -425,30 +494,174 @@ export function ProductPageView({
               {product.title}
             </h1>
 
-            {product.price && (
+            {activePrice && (
               <div className="text-2xl sm:text-3xl font-black text-primary shrink-0">
-                {product.price} دج
+                {activePrice} دج
               </div>
             )}
           </div>
 
+          {/* Variants & Options Selector if product has variants */}
+          {hasVariants && product.variants && product.variants.length > 0 && (
+            <div className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
+                  <Layers className="size-4 text-primary" />
+                  <span>الخيارات والموديلات المتوفرة:</span>
+                </h3>
+                {selectedVariant && (
+                  <span
+                    className="text-xs font-semibold text-primary font-sans"
+                    dir="rtl"
+                  >
+                    {selectedVariant.title}
+                  </span>
+                )}
+              </div>
+
+              {/* A. If product has structured variant options (Color, Size, etc.) */}
+              {product.variantOptions && product.variantOptions.length > 0 ? (
+                <div className="space-y-3.5">
+                  {product.variantOptions.map((optGroup) => (
+                    <div key={optGroup.id} className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground font-medium">
+                          {optGroup.name}:
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {selectedOptions[optGroup.name] || 'غير محدد'}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {optGroup.values.map((val) => {
+                          const isSelected =
+                            selectedOptions[optGroup.name] === val
+
+                          return (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() =>
+                                handleOptionSelect(optGroup.name, val)
+                              }
+                              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all flex items-center gap-1.5 ${
+                                isSelected
+                                  ? 'border-primary bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/25 scale-[1.02]'
+                                  : 'border-border bg-background hover:bg-muted text-foreground'
+                              }`}
+                            >
+                              {isSelected && <Check className="size-3.5" />}
+                              <span>{val}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* B. Simple Variant Chips / Cards if no structured options defined */
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {product.variants.map((v) => {
+                    const isSelected = selectedVariant?.id === v.id
+                    const isVariantOutOfStock = v.inStock === false
+
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        disabled={isVariantOutOfStock}
+                        onClick={() => handleDirectVariantSelect(v)}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-right transition-all text-xs sm:text-sm ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 ring-2 ring-primary/30 font-bold text-foreground shadow-xs'
+                            : isVariantOutOfStock
+                              ? 'border-border/60 bg-muted/10 opacity-50 cursor-not-allowed text-muted-foreground'
+                              : 'border-border bg-background hover:bg-muted/50 text-foreground'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className={`size-2.5 rounded-full shrink-0 ${
+                              isSelected
+                                ? 'bg-primary'
+                                : isVariantOutOfStock
+                                  ? 'bg-muted-foreground'
+                                  : 'bg-border'
+                            }`}
+                          />
+                          <span className="truncate">{v.title}</span>
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-1.5 mr-2">
+                          {v.price && (
+                            <span className="font-bold text-primary text-xs">
+                              {v.price}
+                            </span>
+                          )}
+                          {isVariantOutOfStock && (
+                            <Badge
+                              variant="destructive"
+                              className="text-[10px] py-0 px-1.5"
+                            >
+                              نفد
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Selected Variant Summary bar */}
+              {selectedVariant && (
+                <div className="pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">
+                      الخيار المحدد:
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {selectedVariant.title}
+                    </span>
+                    {isOutOfStock && (
+                      <span className="text-destructive font-semibold text-[11px] bg-destructive/10 px-2 py-0.5 rounded-md">
+                        غير متوفر حالياً
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedVariant.price && (
+                    <span className="font-extrabold text-primary text-sm">
+                      {selectedVariant.price} دج
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Call to Action bar */}
-          {(product.ctaText || product.ctaUrl || product.price) && (
+          {(product.ctaText || product.ctaUrl || activePrice) && (
             <div className="p-4 rounded-xl border border-border bg-card shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <p className="text-xs text-muted-foreground">
                   هل ترغب في طلب هذا المنتج؟
                 </p>
                 <p className="text-sm font-bold text-foreground">
-                  {product.price
-                    ? `متوفر الآن بسعر ${product.price} دج`
-                    : 'متوفر الآن للشحن والتوصيل الفوري'}
+                  {isOutOfStock
+                    ? 'هذا الخيار غير متوفر حالياً في المخزون'
+                    : activePrice
+                      ? `متوفر الآن بسعر ${activePrice} دج`
+                      : 'متوفر الآن للشحن والتوصيل الفوري'}
                 </p>
               </div>
 
               <Button
                 asChild
                 size="lg"
+                disabled={isOutOfStock}
                 className="w-full sm:w-auto font-bold text-sm shadow-sm gap-2"
               >
                 <a href={product.ctaUrl || '#order'}>
@@ -495,7 +708,11 @@ export function ProductPageView({
 
         {/* Dedicated Order Form Section */}
         <div className="pt-4 border-t border-border">
-          <OrderForm product={product} />
+          <OrderForm
+            product={product}
+            selectedVariant={selectedVariant}
+            onSelectVariant={handleDirectVariantSelect}
+          />
         </div>
       </main>
 

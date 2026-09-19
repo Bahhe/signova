@@ -15,8 +15,17 @@ import {
   Globe,
   EyeOff,
   CheckCircle2,
+  Layers,
+  Sparkles,
+  Trash2,
+  Image as ImageIcon,
 } from 'lucide-react'
-import type { Product, ProductImage } from '#/lib/types'
+import type {
+  Product,
+  ProductImage,
+  ProductVariant,
+  ProductVariantOption,
+} from '#/lib/types'
 import { slugify } from '#/lib/types'
 import { ImageManager } from './image-manager'
 import { Input } from './ui/input'
@@ -59,6 +68,23 @@ export function ProductForm({
     initialProduct ? initialProduct.published !== false : true,
   )
 
+  // Product Variants state
+  const [hasVariants, setHasVariants] = React.useState<boolean>(
+    Boolean(initialProduct?.variants && initialProduct.variants.length > 0),
+  )
+  const [variantOptions, setVariantOptions] = React.useState<
+    ProductVariantOption[]
+  >(initialProduct?.variantOptions || [])
+  const [variants, setVariants] = React.useState<ProductVariant[]>(
+    initialProduct?.variants || [],
+  )
+  const [newOptionName, setNewOptionName] = React.useState('')
+  const [newOptionValueInputs, setNewOptionValueInputs] = React.useState<
+    Record<string, string | undefined>
+  >({})
+  const [activeImagePickerVariantId, setActiveImagePickerVariantId] =
+    React.useState<string | null>(null)
+
   const [isSaving, setIsSaving] = React.useState(false)
   const [validationError, setValidationError] = React.useState<string | null>(
     null,
@@ -97,7 +123,7 @@ export function ProductForm({
       setSlug(initialProduct.slug || '')
       setIsSlugLocked(false)
       setDescription(initialProduct.description || '')
-      setImages(initialProduct.images || [])
+      setImages(initialProduct.images)
       setPrice(initialProduct.price || '')
       setCategory(initialProduct.category || '')
       setBadge(initialProduct.badge || '')
@@ -105,6 +131,11 @@ export function ProductForm({
       setNewFeature('')
       setCtaText(initialProduct.ctaText || '')
       setPublished(initialProduct.published !== false)
+      setHasVariants(
+        Boolean(initialProduct.variants && initialProduct.variants.length > 0),
+      )
+      setVariantOptions(initialProduct.variantOptions || [])
+      setVariants(initialProduct.variants || [])
     } else {
       setTitle('')
       setSlug('')
@@ -118,6 +149,9 @@ export function ProductForm({
       setNewFeature('')
       setCtaText('')
       setPublished(true)
+      setHasVariants(false)
+      setVariantOptions([])
+      setVariants([])
     }
   }, [initialProduct])
 
@@ -152,6 +186,126 @@ export function ProductForm({
       e.preventDefault()
       handleAddFeature()
     }
+  }
+
+  // Variant helper functions & handlers
+  const suggestedOptionNames = [
+    'اللون',
+    'المقاس',
+    'السعة',
+    'النوع',
+    'الموديل',
+    'Color',
+    'Size',
+  ]
+
+  const handleAddOptionGroup = (optName?: string) => {
+    const nameToAdd = (optName || newOptionName).trim()
+    if (!nameToAdd) return
+    const id = `opt-${Date.now()}`
+    setVariantOptions((prev) => [...prev, { id, name: nameToAdd, values: [] }])
+    setNewOptionName('')
+  }
+
+  const handleRemoveOptionGroup = (optId: string) => {
+    setVariantOptions((prev) => prev.filter((o) => o.id !== optId))
+  }
+
+  const handleAddOptionValue = (optId: string) => {
+    const rawVal = newOptionValueInputs[optId]?.trim()
+    if (!rawVal) return
+    setVariantOptions((prev) =>
+      prev.map((opt) => {
+        if (opt.id === optId && !opt.values.includes(rawVal)) {
+          return { ...opt, values: [...opt.values, rawVal] }
+        }
+        return opt
+      }),
+    )
+    setNewOptionValueInputs((prev) => ({ ...prev, [optId]: '' }))
+  }
+
+  const handleRemoveOptionValue = (optId: string, valIndex: number) => {
+    setVariantOptions((prev) =>
+      prev.map((opt) => {
+        if (opt.id === optId) {
+          return {
+            ...opt,
+            values: opt.values.filter((_, idx) => idx !== valIndex),
+          }
+        }
+        return opt
+      }),
+    )
+  }
+
+  const handleGenerateVariants = () => {
+    const active = variantOptions.filter(
+      (o) => o.name.trim() && o.values.length > 0,
+    )
+    if (active.length === 0) return
+
+    let combinations: {
+      title: string
+      options: Record<string, string>
+    }[] = [{ title: '', options: {} }]
+
+    for (const opt of active) {
+      const nextCombos: typeof combinations = []
+      for (const current of combinations) {
+        for (const val of opt.values) {
+          nextCombos.push({
+            title: current.title ? `${current.title} / ${val}` : val,
+            options: { ...current.options, [opt.name.trim()]: val },
+          })
+        }
+      }
+      combinations = nextCombos
+    }
+
+    const generated: ProductVariant[] = combinations.map((combo, idx) => {
+      const existing = variants.find(
+        (v) => v.title.toLowerCase() === combo.title.toLowerCase(),
+      )
+      if (existing) {
+        return {
+          ...existing,
+          options: combo.options,
+        }
+      }
+      return {
+        id: `var-${Date.now()}-${idx}`,
+        title: combo.title,
+        price: price || undefined,
+        inStock: true,
+        options: combo.options,
+      }
+    })
+
+    setVariants(generated)
+  }
+
+  const handleAddCustomVariant = () => {
+    const newVar: ProductVariant = {
+      id: `var-${Date.now()}`,
+      title: `Variant ${variants.length + 1}`,
+      price: price || undefined,
+      inStock: true,
+    }
+    setVariants((prev) => [...prev, newVar])
+  }
+
+  const handleUpdateVariant = (
+    variantId: string,
+    updates: Partial<ProductVariant>,
+  ) => {
+    setVariants((prev) =>
+      prev.map((v) => (v.id === variantId ? { ...v, ...updates } : v)),
+    )
+  }
+
+  const handleDeleteVariant = (variantId: string) => {
+    setVariants((prev) => prev.filter((v) => v.id !== variantId))
   }
 
   const validate = (): boolean => {
@@ -190,6 +344,19 @@ export function ProductForm({
       return false
     }
 
+    if (hasVariants) {
+      if (variants.length === 0) {
+        setValidationError(
+          'Please configure at least one variant or disable the variants toggle.',
+        )
+        return false
+      }
+      if (variants.some((v) => !v.title.trim())) {
+        setValidationError('All product variants must have a title or name.')
+        return false
+      }
+    }
+
     setValidationError(null)
     return true
   }
@@ -209,6 +376,8 @@ export function ProductForm({
         category: category.trim() || undefined,
         badge: badge.trim() || undefined,
         features: features.map((f) => f.trim()).filter(Boolean),
+        variants: hasVariants ? variants : [],
+        variantOptions: hasVariants ? variantOptions : [],
         ctaText: ctaText.trim() || undefined,
         ctaUrl: initialProduct?.ctaUrl || '#order',
         published,
@@ -232,6 +401,9 @@ export function ProductForm({
         setNewFeature('')
         setCtaText('')
         setPublished(true)
+        setHasVariants(false)
+        setVariantOptions([])
+        setVariants([])
       }
     } catch (err: any) {
       console.error(err)
@@ -254,6 +426,9 @@ export function ProductForm({
     setNewFeature('')
     setCtaText('')
     setPublished(true)
+    setHasVariants(false)
+    setVariantOptions([])
+    setVariants([])
     setValidationError(null)
     if (onCancel) onCancel()
   }
@@ -549,7 +724,489 @@ export function ProductForm({
         )}
       </div>
 
-      {/* 6. Call to Action (CTA) & Visibility Settings */}
+      {/* 6. Product Variants & Options (خيارات ومتغيرات المنتج) */}
+      <div className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-2xs space-y-5">
+        <div className="flex items-center justify-between gap-4 pb-3 border-b border-border/80">
+          <div className="space-y-0.5">
+            <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
+              <Layers className="size-4 text-primary" />
+              <span>Product Variants & Options (خيارات ومتغيرات المنتج)</span>
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Enable this if this product has multiple colors, sizes, models, or
+              bundles with custom pricing.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">
+              {hasVariants ? 'Enabled' : 'Disabled'}
+            </span>
+            <Switch
+              id="prod-has-variants"
+              checked={hasVariants}
+              onCheckedChange={(checked) => {
+                setHasVariants(checked)
+                if (checked && variants.length === 0) {
+                  // Add default option group to help user get started quickly
+                  if (variantOptions.length === 0) {
+                    setVariantOptions([
+                      {
+                        id: `opt-${Date.now()}`,
+                        name: 'اللون',
+                        values: [],
+                      },
+                    ])
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {hasVariants && (
+          <div className="space-y-6 pt-1">
+            {/* Step A: Option Types & Values Builder */}
+            <div className="space-y-3 p-3.5 rounded-xl border border-border/80 bg-muted/20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Tag className="size-3.5 text-primary" />
+                    <span>Option Attributes (مثل اللون، المقاس، النوع)</span>
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground">
+                    Add option groups like Color or Size, then enter available
+                    values.
+                  </p>
+                </div>
+
+                {/* Quick Add Suggestion Chips */}
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-medium mr-1">
+                    Quick suggestions:
+                  </span>
+                  {suggestedOptionNames.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => handleAddOptionGroup(name)}
+                      className="text-[10px] px-2 py-0.5 rounded-md border border-border bg-background hover:bg-muted text-foreground transition-colors"
+                    >
+                      + {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Option Groups List */}
+              <div className="space-y-3 pt-1">
+                {variantOptions.map((opt) => (
+                  <div
+                    key={opt.id}
+                    className="p-3 rounded-lg border border-border bg-background space-y-2.5 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1 max-w-xs">
+                        <Label className="text-[11px] font-semibold shrink-0 text-muted-foreground">
+                          Option Name:
+                        </Label>
+                        <Input
+                          placeholder="e.g. اللون (Color) or المقاس (Size)"
+                          value={opt.name}
+                          onChange={(e) =>
+                            setVariantOptions((prev) =>
+                              prev.map((o) =>
+                                o.id === opt.id
+                                  ? { ...o, name: e.target.value }
+                                  : o,
+                              ),
+                            )
+                          }
+                          className="h-8 text-xs"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveOptionGroup(opt.id)}
+                        className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
+                        title="Delete Option Group"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Values Pills & Input */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-muted-foreground font-medium">
+                        Values (القيم المتوفرة):
+                      </Label>
+                      <div className="flex flex-wrap items-center gap-1.5 min-h-7">
+                        {opt.values.map((val, vIdx) => (
+                          <span
+                            key={vIdx}
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 font-medium"
+                          >
+                            <span>{val}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRemoveOptionValue(opt.id, vIdx)
+                              }
+                              className="hover:text-destructive hover:scale-110 transition-all ml-0.5"
+                              title="Remove value"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </span>
+                        ))}
+
+                        <div className="flex items-center gap-1.5 flex-1 min-w-[160px]">
+                          <Input
+                            placeholder="Add value (e.g. أسود, S, M...) and press Enter"
+                            value={newOptionValueInputs[opt.id] || ''}
+                            onChange={(e) =>
+                              setNewOptionValueInputs((prev) => ({
+                                ...prev,
+                                [opt.id]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleAddOptionValue(opt.id)
+                              }
+                            }}
+                            className="h-7 text-xs flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="xs"
+                            onClick={() => handleAddOptionValue(opt.id)}
+                            disabled={!newOptionValueInputs[opt.id]?.trim()}
+                            className="h-7 text-xs px-2 shrink-0"
+                          >
+                            <Plus className="size-3 mr-0.5" />
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add new option input */}
+                <div className="flex items-center gap-2 pt-1">
+                  <Input
+                    placeholder="New custom option name (e.g. نوع القماش, السعة...)"
+                    value={newOptionName}
+                    onChange={(e) => setNewOptionName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddOptionGroup()
+                      }
+                    }}
+                    className="h-8 text-xs max-w-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddOptionGroup()}
+                    disabled={!newOptionName.trim()}
+                    className="h-8 text-xs gap-1"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Add Option</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Generate Variants Action Button */}
+              {variantOptions.some((o) => o.values.length > 0) && (
+                <div className="pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    Automatically create variants by combining all option
+                    values.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={handleGenerateVariants}
+                    className="h-8 text-xs gap-1.5 bg-primary font-semibold shadow-xs"
+                  >
+                    <Sparkles className="size-3.5" />
+                    <span>
+                      Generate Variants from Options (توليد التشكيلات)
+                    </span>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Step B: Configured Variants List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3.5 text-emerald-600" />
+                    <span>Configured Variants ({variants.length})</span>
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    Set variant specific prices, stock availability, and
+                    associated photos.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={handleAddCustomVariant}
+                  className="h-7 text-xs gap-1"
+                >
+                  <Plus className="size-3" />
+                  <span>+ Add Custom Variant</span>
+                </Button>
+              </div>
+
+              {variants.length > 0 ? (
+                <div className="space-y-2.5">
+                  {variants.map((v, idx) => {
+                    const variantImg = v.imageId
+                      ? images.find((img) => img.id === v.imageId)
+                      : v.imageUrl
+                        ? { url: v.imageUrl, name: 'Variant Photo' }
+                        : null
+
+                    return (
+                      <div
+                        key={v.id}
+                        className="p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors shadow-2xs space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          {/* Image & Title */}
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {/* Image Picker Trigger */}
+                            <div className="relative shrink-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setActiveImagePickerVariantId(
+                                    activeImagePickerVariantId === v.id
+                                      ? null
+                                      : v.id,
+                                  )
+                                }
+                                className={`size-11 rounded-lg border flex items-center justify-center overflow-hidden transition-colors ${
+                                  variantImg
+                                    ? 'border-primary/40 bg-muted/40'
+                                    : 'border-dashed border-border hover:border-foreground/40 bg-muted/20'
+                                }`}
+                                title="Click to assign photo to this variant"
+                              >
+                                {variantImg ? (
+                                  <img
+                                    src={variantImg.url}
+                                    alt={v.title}
+                                    className="size-full object-cover"
+                                  />
+                                ) : (
+                                  <ImageIcon className="size-4 text-muted-foreground" />
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Title input */}
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <Input
+                                value={v.title}
+                                onChange={(e) =>
+                                  handleUpdateVariant(v.id, {
+                                    title: e.target.value,
+                                  })
+                                }
+                                placeholder="Variant title (e.g. Lunar Grey / Linear)"
+                                className="h-8 text-xs font-semibold"
+                              />
+                              {v.options &&
+                                Object.keys(v.options).length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {Object.entries(v.options).map(
+                                      ([k, val]) => (
+                                        <span
+                                          key={k}
+                                          className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-medium"
+                                        >
+                                          {k}: {val}
+                                        </span>
+                                      ),
+                                    )}
+                                  </div>
+                                )}
+                            </div>
+                          </div>
+
+                          {/* Price Override & Stock & Actions */}
+                          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                            {/* Price */}
+                            <div className="space-y-0.5">
+                              <div className="relative">
+                                <DollarSign className="size-3 text-muted-foreground absolute left-2 top-1/2 -translate-y-1/2" />
+                                <Input
+                                  value={v.price || ''}
+                                  onChange={(e) =>
+                                    handleUpdateVariant(v.id, {
+                                      price: e.target.value,
+                                    })
+                                  }
+                                  placeholder={price || 'Base price'}
+                                  className="h-8 pl-6 w-28 sm:w-32 text-xs"
+                                  title="Custom price override for this variant"
+                                />
+                              </div>
+                            </div>
+
+                            {/* In Stock toggle */}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUpdateVariant(v.id, {
+                                  inStock: v.inStock === false ? true : false,
+                                })
+                              }
+                              className={`h-8 px-2.5 rounded-md text-[11px] font-semibold border transition-colors ${
+                                v.inStock !== false
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                  : 'bg-destructive/10 text-destructive border-destructive/30'
+                              }`}
+                            >
+                              {v.inStock !== false
+                                ? 'In Stock'
+                                : 'Out of Stock'}
+                            </button>
+
+                            {/* Delete Variant */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVariant(v.id)}
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                              title="Delete variant"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Image Selection Popover/Strip */}
+                        {activeImagePickerVariantId === v.id && (
+                          <div className="p-3 rounded-lg border border-border/80 bg-muted/30 space-y-2 animate-in fade-in-50 duration-150">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-semibold text-foreground">
+                                Select Photo for "{v.title}":
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="xs"
+                                onClick={() =>
+                                  setActiveImagePickerVariantId(null)
+                                }
+                                className="h-6 text-[10px]"
+                              >
+                                Close
+                              </Button>
+                            </div>
+
+                            {images.length > 0 ? (
+                              <div className="flex flex-wrap gap-2 items-center">
+                                {/* Option to clear photo */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleUpdateVariant(v.id, {
+                                      imageId: undefined,
+                                      imageUrl: undefined,
+                                    })
+                                    setActiveImagePickerVariantId(null)
+                                  }}
+                                  className={`size-14 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-[9px] text-muted-foreground hover:border-destructive/60 hover:text-destructive transition-colors ${
+                                    !v.imageId && !v.imageUrl
+                                      ? 'border-primary bg-primary/5 text-primary'
+                                      : 'border-border'
+                                  }`}
+                                >
+                                  No Photo
+                                </button>
+
+                                {images.map((img, imgIdx) => {
+                                  const isSelected =
+                                    v.imageId === img.id ||
+                                    v.imageUrl === img.url
+
+                                  return (
+                                    <button
+                                      key={img.id || imgIdx}
+                                      type="button"
+                                      onClick={() => {
+                                        handleUpdateVariant(v.id, {
+                                          imageId: img.id,
+                                          imageUrl: img.url,
+                                        })
+                                        setActiveImagePickerVariantId(null)
+                                      }}
+                                      className={`relative size-14 rounded-lg overflow-hidden border-2 transition-all ${
+                                        isSelected
+                                          ? 'border-primary ring-2 ring-primary/30 scale-105'
+                                          : 'border-border opacity-70 hover:opacity-100 hover:border-foreground/40'
+                                      }`}
+                                    >
+                                      <img
+                                        src={img.url}
+                                        alt={img.name || `Photo ${imgIdx + 1}`}
+                                        className="size-full object-cover"
+                                      />
+                                      {isSelected && (
+                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                          <Check className="size-4 text-primary bg-background rounded-full p-0.5" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground italic">
+                                No product images uploaded yet. Upload images in
+                                the gallery above first to associate them with
+                                variants.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="p-6 text-center rounded-xl border border-dashed border-border/80 bg-muted/10 space-y-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    No variants generated yet.
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/80">
+                    Add option attributes above and click "Generate Variants",
+                    or click "+ Add Custom Variant" to add one manually.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 7. Call to Action (CTA) & Visibility Settings */}
       <div className="p-4 rounded-xl border border-border/80 bg-muted/10 space-y-4">
         <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
           <ShoppingCart className="size-3.5 text-primary" />

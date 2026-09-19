@@ -19,7 +19,8 @@ export const Route = createRootRoute({
     }
   },
   head: ({ loaderData }) => {
-    const faviconUrl = loaderData?.settings?.faviconUrl?.trim() || '/favicon.ico'
+    const faviconUrl =
+      loaderData?.settings?.faviconUrl?.trim() || '/favicon.ico'
     const storeName = loaderData?.settings?.storeName?.trim() || 'SignovaPub'
     return {
       meta: [
@@ -66,7 +67,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     const fav = settings?.faviconUrl?.trim() || '/favicon.ico'
     let link = document.querySelector(
       "link[rel~='icon']",
-    ) as HTMLLinkElement | null
+    )
     if (!link) {
       link = document.createElement('link')
       link.rel = 'icon'

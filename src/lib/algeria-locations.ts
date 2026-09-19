@@ -70,7 +70,7 @@ const WILAYA_NAMES: Record<string, { name: string; ar_name: string }> = {
 }
 
 export const ALL_COMMUNES: CommuneLocation[] =
-  locationsData as CommuneLocation[]
+  locationsData
 
 // Generate sorted Wilayas list (1 to 48)
 export const WILAYAS: Wilaya[] = Array.from({ length: 48 }, (_, i) => {

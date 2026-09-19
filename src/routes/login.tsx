@@ -71,9 +71,7 @@ function LoginPage() {
         })
 
         if (signUpError) {
-          setError(
-            signUpError.message || 'Failed to create account',
-          )
+          setError(signUpError.message || 'Failed to create account')
           setIsLoading(false)
           return
         }
@@ -114,7 +112,9 @@ function LoginPage() {
                 />
               ) : (
                 <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                  {settings?.storeName ? settings.storeName.charAt(0).toUpperCase() : 'S'}
+                  {settings?.storeName
+                    ? settings.storeName.charAt(0).toUpperCase()
+                    : 'S'}
                 </div>
               )}
               <span className="font-bold text-base tracking-tight">

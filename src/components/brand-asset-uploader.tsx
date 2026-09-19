@@ -68,7 +68,13 @@ export function BrandAssetUploader({
           type === 'favicon' ? 256 : 1000,
           type === 'favicon' ? 256 : 500,
           0.92,
-        ).catch(() => fileToDataUrl(file).then((url) => ({ url, size: file.size, name: file.name })))
+        ).catch(() =>
+          fileToDataUrl(file).then((url) => ({
+            url,
+            size: file.size,
+            name: file.name,
+          })),
+        )
         base64Data = optimized.url
         filename = optimized.name || file.name
       }
@@ -82,7 +88,9 @@ export function BrandAssetUploader({
           body: JSON.stringify({
             base64Data,
             filename,
-            contentType: file.type || (filename.endsWith('.ico') ? 'image/x-icon' : 'image/png'),
+            contentType:
+              file.type ||
+              (filename.endsWith('.ico') ? 'image/x-icon' : 'image/png'),
           }),
         })
 
@@ -93,7 +101,10 @@ export function BrandAssetUploader({
           }
         }
       } catch (uploadErr) {
-        console.warn('Server upload to storage endpoint failed, using data URL fallback:', uploadErr)
+        console.warn(
+          'Server upload to storage endpoint failed, using data URL fallback:',
+          uploadErr,
+        )
       }
 
       // 3. Set value (prefer uploaded storage URL, fallback to base64)
@@ -309,16 +320,32 @@ export function BrandAssetUploader({
                   <span className="text-xs font-semibold truncate text-foreground">
                     {storeName} | Store
                   </span>
-                  <span className="text-muted-foreground text-[10px] ml-auto">✕</span>
+                  <span className="text-muted-foreground text-[10px] ml-auto">
+                    ✕
+                  </span>
                 </div>
 
                 {/* Additional size previews */}
                 <div className="hidden sm:flex items-center gap-2 text-muted-foreground text-[10px]">
-                  <div className="size-6 rounded-md bg-card border border-border flex items-center justify-center p-0.5" title="24px icon">
-                    <img src={value} alt="24px" className="size-4 object-contain" />
+                  <div
+                    className="size-6 rounded-md bg-card border border-border flex items-center justify-center p-0.5"
+                    title="24px icon"
+                  >
+                    <img
+                      src={value}
+                      alt="24px"
+                      className="size-4 object-contain"
+                    />
                   </div>
-                  <div className="size-5 rounded bg-card border border-border flex items-center justify-center p-0.5" title="16px icon">
-                    <img src={value} alt="16px" className="size-3 object-contain" />
+                  <div
+                    className="size-5 rounded bg-card border border-border flex items-center justify-center p-0.5"
+                    title="16px icon"
+                  >
+                    <img
+                      src={value}
+                      alt="16px"
+                      className="size-3 object-contain"
+                    />
                   </div>
                 </div>
               </div>

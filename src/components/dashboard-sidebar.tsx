@@ -98,7 +98,9 @@ export function DashboardSidebar({
             />
           ) : (
             <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-              {settings?.storeName ? settings.storeName.charAt(0).toUpperCase() : 'S'}
+              {settings?.storeName
+                ? settings.storeName.charAt(0).toUpperCase()
+                : 'S'}
             </div>
           )}
           <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">

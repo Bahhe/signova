@@ -169,9 +169,7 @@ export async function updateStorefrontSettings(
         ? settings.metaPixelId
         : current.metaPixelId || '',
     logoUrl:
-      settings.logoUrl !== undefined
-        ? settings.logoUrl
-        : current.logoUrl || '',
+      settings.logoUrl !== undefined ? settings.logoUrl : current.logoUrl || '',
     faviconUrl:
       settings.faviconUrl !== undefined
         ? settings.faviconUrl

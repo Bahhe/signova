@@ -7,6 +7,23 @@ export interface ProductImage {
   error?: string
 }
 
+export interface ProductVariantOption {
+  id: string
+  name: string
+  values: string[]
+}
+
+export interface ProductVariant {
+  id: string
+  title: string
+  price?: string
+  sku?: string
+  inStock?: boolean
+  imageId?: string
+  imageUrl?: string
+  options?: Record<string, string>
+}
+
 export interface Product {
   id: string
   title: string
@@ -20,6 +37,8 @@ export interface Product {
   ctaUrl?: string
   badge?: string
   published: boolean
+  variants?: ProductVariant[]
+  variantOptions?: ProductVariantOption[]
   createdAt: string
   updatedAt: string
 }
@@ -51,6 +70,8 @@ export interface OrderInput {
   productPrice?: string
   quantity?: number
   notes?: string
+  variantId?: string
+  variantTitle?: string
 }
 
 export interface Order extends OrderInput {

@@ -85,6 +85,8 @@ export async function processNewOrder(
     quantity,
     totalAmount,
     notes: (input.notes || '').trim(),
+    variantId: input.variantId,
+    variantTitle: input.variantTitle,
     status: 'New',
     createdAt: new Date().toISOString(),
   }

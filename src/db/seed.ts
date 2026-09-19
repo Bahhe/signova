@@ -21,10 +21,18 @@ async function seed() {
         ctaText: p.ctaText,
         ctaUrl: p.ctaUrl,
         published: p.published,
+        variants: p.variants || [],
+        variantOptions: p.variantOptions || [],
         createdAt: new Date(p.createdAt),
         updatedAt: new Date(p.updatedAt),
       })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: productsTable.id,
+        set: {
+          variants: p.variants || [],
+          variantOptions: p.variantOptions || [],
+        },
+      })
   }
   console.log('Seed completed successfully!')
   process.exit(0)

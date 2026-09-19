@@ -670,8 +670,9 @@ function SettingsPage() {
                       Store Branding & Visual Identity
                     </h2>
                     <p className="text-xs text-muted-foreground">
-                      Configure your store name, logo (displayed across headers, footer, and sidebar),
-                      favicon for browser tabs, and store bio.
+                      Configure your store name, logo (displayed across headers,
+                      footer, and sidebar), favicon for browser tabs, and store
+                      bio.
                     </p>
                   </div>
                 </div>
@@ -694,7 +695,8 @@ function SettingsPage() {
                       className="text-xs"
                     />
                     <p className="text-[11px] text-muted-foreground">
-                      Your business or store title used in SEO titles, headings, and branding.
+                      Your business or store title used in SEO titles, headings,
+                      and branding.
                     </p>
                   </div>
 
@@ -841,7 +843,8 @@ function SettingsPage() {
                     </h3>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Updates in real time as you adjust your store logo, name, contacts, and links
+                    Updates in real time as you adjust your store logo, name,
+                    contacts, and links
                   </span>
                 </div>
                 <div className="rounded-2xl border border-border/80 overflow-hidden shadow-sm bg-card/60 backdrop-blur-sm">

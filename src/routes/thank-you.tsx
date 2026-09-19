@@ -41,6 +41,7 @@ interface ThankYouSearchParams {
   phone?: string
   wilaya?: string
   commune?: string
+  variantTitle?: string
 }
 
 export const Route = createFileRoute('/thank-you')({
@@ -61,6 +62,8 @@ export const Route = createFileRoute('/thank-you')({
     phone: typeof search.phone === 'string' ? search.phone : undefined,
     wilaya: typeof search.wilaya === 'string' ? search.wilaya : undefined,
     commune: typeof search.commune === 'string' ? search.commune : undefined,
+    variantTitle:
+      typeof search.variantTitle === 'string' ? search.variantTitle : undefined,
   }),
   loader: async () => {
     try {
@@ -138,7 +141,9 @@ function ThankYouPageRoute() {
         trackPurchase({
           value: numericTotal,
           currency: search.currency || 'DZD',
-          content_name: productTitle,
+          content_name: search.variantTitle
+            ? `${productTitle} (${search.variantTitle})`
+            : productTitle,
           content_ids: search.productId ? [search.productId] : undefined,
           num_items: quantity,
           order_id: orderId,
@@ -155,6 +160,7 @@ function ThankYouPageRoute() {
     orderId,
     numericTotal,
     search.currency,
+    search.variantTitle,
     productTitle,
     search.productId,
     quantity,
@@ -192,7 +198,9 @@ function ThankYouPageRoute() {
                 />
               ) : (
                 <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs">
-                  {serverSettings?.storeName ? serverSettings.storeName.charAt(0).toUpperCase() : 'S'}
+                  {serverSettings?.storeName
+                    ? serverSettings.storeName.charAt(0).toUpperCase()
+                    : 'S'}
                 </div>
               )}
               <span className="font-bold text-sm tracking-tight">
@@ -288,6 +296,11 @@ function ThankYouPageRoute() {
                     <h3 className="font-bold text-base text-foreground">
                       {productTitle}
                     </h3>
+                    {search.variantTitle && (
+                      <div className="text-xs font-semibold text-primary pt-0.5">
+                        الخيار / الموديل: {search.variantTitle}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 pt-0.5">
                       <Badge
                         variant="secondary"
