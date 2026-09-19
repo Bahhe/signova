@@ -1,6 +1,6 @@
-import { Link } from '@tanstack/react-router'
 import { FileQuestion, LayoutDashboard, Store } from 'lucide-react'
 import { authClient } from '#/lib/auth-client'
+import { getShopUrl, getMainUrl } from '#/lib/domain'
 
 export function NotFound() {
   const { data: session } = authClient.useSession()
@@ -19,21 +19,21 @@ export function NotFound() {
         changed, or is temporarily unavailable.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <Link
-          to="/p"
+        <a
+          href={getShopUrl('/')}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
         >
           <Store className="size-3.5" />
           <span>Explore Showcase</span>
-        </Link>
+        </a>
         {isAdmin && (
-          <Link
-            to="/"
+          <a
+            href={getMainUrl('/dashboard')}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-colors shadow-xs"
           >
             <LayoutDashboard className="size-3.5" />
             <span>Dashboard</span>
-          </Link>
+          </a>
         )}
       </div>
     </div>

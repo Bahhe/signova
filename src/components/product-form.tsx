@@ -974,7 +974,7 @@ export function ProductForm({
 
               {variants.length > 0 ? (
                 <div className="space-y-2.5">
-                  {variants.map((v, idx) => {
+                  {variants.map((v) => {
                     const variantImg = v.imageId
                       ? images.find((img) => img.id === v.imageId)
                       : v.imageUrl

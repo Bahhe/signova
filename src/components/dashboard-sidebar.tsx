@@ -13,6 +13,7 @@ import {
 import type { Product, StorefrontSettings } from '#/lib/types'
 import { useStorefrontSettings } from '#/lib/use-storefront-settings'
 import { authClient } from '#/lib/auth-client'
+import { getShopUrl } from '#/lib/domain'
 import {
   Sidebar,
   SidebarContent,
@@ -129,7 +130,7 @@ export function DashboardSidebar({
                   tooltip="All Products"
                 >
                   <Link
-                    to="/"
+                    to="/dashboard"
                     onClick={(e) => {
                       if (currentRoute === 'products' && onSelectCategory) {
                         e.preventDefault()
@@ -150,7 +151,7 @@ export function DashboardSidebar({
                   isActive={currentRoute === 'users'}
                   tooltip="User Management"
                 >
-                  <Link to="/users">
+                  <Link to="/dashboard/users">
                     <Users className="size-4" />
                     <span>Users & Roles</span>
                   </Link>
@@ -163,7 +164,7 @@ export function DashboardSidebar({
                   isActive={currentRoute === 'settings'}
                   tooltip="Settings"
                 >
-                  <Link to="/settings">
+                  <Link to="/dashboard/settings">
                     <Settings className="size-4" />
                     <span>Settings</span>
                   </Link>
@@ -215,7 +216,7 @@ export function DashboardSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="View Showcase">
-                  <a href="/p">
+                  <a href={getShopUrl('/')} target="_blank" rel="noopener noreferrer">
                     <Store className="size-4" />
                     <span>View Showcase</span>
                     <ExternalLink className="ml-auto size-3 opacity-60 group-data-[collapsible=icon]:hidden" />

@@ -6,8 +6,9 @@ import {
   EyeOff,
   Layers,
 } from 'lucide-react'
-import type { Product } from '#/lib/types'
+import type { Product, ProductImage } from '#/lib/types'
 import { Button } from './ui/button'
+import { getShopUrl } from '#/lib/domain'
 
 interface ProductCardProps {
   product: Product
@@ -78,12 +79,12 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
               </span>
             )}
             <a
-              href={`/p/${product.slug}`}
+              href={getShopUrl(`/${product.slug}`)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 font-mono text-primary hover:underline ml-1"
             >
-              /p/{product.slug}
+              /{product.slug}
               <ExternalLink className="size-2.5" />
             </a>
           </div>
@@ -110,7 +111,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
         </Button>
 
         <a
-          href={`/p/${product.slug}`}
+          href={getShopUrl(`/${product.slug}`)}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center justify-center h-8 px-2.5 text-xs rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors gap-1"

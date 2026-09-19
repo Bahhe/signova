@@ -5,8 +5,6 @@ import type {DbProduct} from '#/db/schema.ts';
 import type {
   Product,
   ProductImage,
-  ProductVariant,
-  ProductVariantOption,
 } from '../lib/types.ts'
 import { INITIAL_PRODUCTS } from '../lib/sample-data.ts'
 

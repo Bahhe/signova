@@ -9,6 +9,7 @@ import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { DirectionProvider } from '#/components/direction-provider'
 import { Lock, Mail, User, AlertCircle, ArrowRight, Store } from 'lucide-react'
+import { getShopUrl } from '#/lib/domain'
 
 interface LoginSearchParams {
   redirect?: string
@@ -22,7 +23,7 @@ export const Route = createFileRoute('/login')({
     const session = await getSessionServerFn()
     if (session) {
       throw redirect({
-        to: (search.redirect as string) || '/',
+        to: (search.redirect as string) || '/dashboard',
       })
     }
   },
@@ -41,7 +42,7 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   const navigate = useNavigate()
   const search = Route.useSearch()
-  const redirectTarget = search.redirect || '/'
+  const redirectTarget = search.redirect || '/dashboard'
   const { settings } = useStorefrontSettings()
 
   const [mode, setMode] = React.useState<'signin' | 'signup'>('signin')
@@ -124,7 +125,7 @@ function LoginPage() {
 
             <div className="flex items-center gap-3">
               <a
-                href="/p"
+                href={getShopUrl('/')}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Store className="size-3.5" />

@@ -6,6 +6,7 @@ import { Button } from '#/components/ui/button'
 import { ShieldAlert, LogOut, Store } from 'lucide-react'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { DirectionProvider } from '#/components/direction-provider'
+import { getShopUrl } from '#/lib/domain'
 
 export const Route = createFileRoute('/unauthorized')({
   beforeLoad: async () => {
@@ -15,7 +16,7 @@ export const Route = createFileRoute('/unauthorized')({
     }
     const role = (session.user as { role?: string }).role || 'user'
     if (role === 'admin') {
-      throw redirect({ to: '/' })
+      throw redirect({ to: '/dashboard' })
     }
     return { session }
   },
@@ -56,7 +57,7 @@ function UnauthorizedPage() {
 
             <div className="flex items-center gap-3">
               <a
-                href="/p"
+                href={getShopUrl('/')}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Store className="size-3.5" />
@@ -109,7 +110,7 @@ function UnauthorizedPage() {
             {/* Action Buttons */}
             <div className="space-y-2 pt-2">
               <a
-                href="/p"
+                href={getShopUrl('/')}
                 className="w-full inline-flex items-center justify-center gap-2 h-10 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
               >
                 <Store className="size-4" />
