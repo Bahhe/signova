@@ -92,6 +92,8 @@ export interface StorefrontSettings {
   workingHours?: string
   socialLinks: StorefrontSocialLinks
   metaPixelId?: string
+  logoUrl?: string
+  faviconUrl?: string
   updatedAt?: string
 }
 
@@ -107,6 +109,8 @@ export const DEFAULT_STOREFRONT_SETTINGS: StorefrontSettings = {
   locationUrl: 'https://maps.google.com',
   workingHours: 'خدمة الزبائن: 7/7 أيام من 09:00 إلى 20:00',
   metaPixelId: '',
+  logoUrl: '',
+  faviconUrl: '',
   socialLinks: {
     facebook: 'https://facebook.com',
     instagram: 'https://instagram.com',

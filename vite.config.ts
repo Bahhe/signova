@@ -13,7 +13,8 @@ function signovaApiPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (req.url && req.url.startsWith('/api/')) {
           try {
-            const { handleApiRequest } = await import('./src/server/api-middleware.ts')
+            const { handleApiRequest } =
+              await import('./src/server/api-middleware.ts')
             const handled = await handleApiRequest(req, res)
             if (handled) return
           } catch (e) {
@@ -28,6 +29,11 @@ function signovaApiPlugin(): Plugin {
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  server: {
+    watch: {
+      ignored: ['**/data/**', '**/.git/**'],
+    },
+  },
   plugins: [
     signovaApiPlugin(),
     devtools(),

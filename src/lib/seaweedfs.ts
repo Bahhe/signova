@@ -33,7 +33,9 @@ export function getS3Config(): S3Config {
 
   const endpoint = (
     explicitEndpoint ||
-    (process.env.NODE_ENV === 'production' ? 'http://seaweedfs-master:8333' : 'http://127.0.0.1:8333')
+    (process.env.NODE_ENV === 'production'
+      ? 'http://seaweedfs-master:8333'
+      : 'http://127.0.0.1:8333')
   )
     .trim()
     .replace(/\/+$/, '')
@@ -134,7 +136,10 @@ export function getPublicImageUrl(key: string): string {
     config.endpoint.includes('127.0.0.1') ||
     config.endpoint.includes('0.0.0.0')
 
-  if (!isInternal && (config.endpoint.startsWith('https://') || config.endpoint.includes('.'))) {
+  if (
+    !isInternal &&
+    (config.endpoint.startsWith('https://') || config.endpoint.includes('.'))
+  ) {
     return `${config.endpoint}/${config.bucket}/${key}`
   }
 
@@ -160,10 +165,15 @@ export async function ensureBucketExists(): Promise<void> {
       err.code === 'ENOTFOUND'
 
     if (isConnErr) {
-      throw new Error(`Cannot reach S3 storage at '${endpoint}': ${err.message || err.code}`)
+      throw new Error(
+        `Cannot reach S3 storage at '${endpoint}': ${err.message || err.code}`,
+      )
     }
 
-    console.log(`[SeaweedFS] Bucket '${bucket}' check at ${endpoint}:`, err.message || err)
+    console.log(
+      `[SeaweedFS] Bucket '${bucket}' check at ${endpoint}:`,
+      err.message || err,
+    )
     try {
       await client.send(new CreateBucketCommand({ Bucket: bucket }))
       console.log(`[SeaweedFS] Bucket '${bucket}' created successfully.`)
@@ -176,10 +186,18 @@ export async function ensureBucketExists(): Promise<void> {
       ) {
         bucketEnsured = true
       } else {
-        console.warn(`[SeaweedFS] Could not create bucket '${bucket}':`, createErr.message || createErr)
+        console.warn(
+          `[SeaweedFS] Could not create bucket '${bucket}':`,
+          createErr.message || createErr,
+        )
         // If it was another connection error, rethrow
-        if (createErr.name === 'TimeoutError' || createErr.code === 'ECONNREFUSED') {
-          throw new Error(`Cannot reach S3 storage at '${endpoint}': ${createErr.message}`)
+        if (
+          createErr.name === 'TimeoutError' ||
+          createErr.code === 'ECONNREFUSED'
+        ) {
+          throw new Error(
+            `Cannot reach S3 storage at '${endpoint}': ${createErr.message}`,
+          )
         }
       }
     }
@@ -210,7 +228,9 @@ export async function uploadToSeaweedFS({
   const rawBase64 = matches ? matches[2] : base64Data
   const buffer = Buffer.from(rawBase64, 'base64')
 
-  const ext = filename.includes('.') ? filename.split('.').pop() : mimeType.split('/')[1] || 'jpg'
+  const ext = filename.includes('.')
+    ? filename.split('.').pop()
+    : mimeType.split('/')[1] || 'jpg'
   const cleanBaseName = filename.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 30)
   const uniqueKey = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}-${cleanBaseName}.${ext}`
 
@@ -223,18 +243,21 @@ export async function uploadToSeaweedFS({
           Body: buffer,
           ContentType: mimeType,
           ACL: 'public-read',
-        })
+        }),
       )
     } catch (putErr: any) {
       // If ACL: 'public-read' is not supported by this S3 server, retry without ACL
-      if (putErr.name === 'AccessControlListNotSupported' || putErr.message?.includes('ACL')) {
+      if (
+        putErr.name === 'AccessControlListNotSupported' ||
+        putErr.message?.includes('ACL')
+      ) {
         await client.send(
           new PutObjectCommand({
             Bucket: bucket,
             Key: uniqueKey,
             Body: buffer,
             ContentType: mimeType,
-          })
+          }),
         )
       } else {
         throw putErr
@@ -242,7 +265,7 @@ export async function uploadToSeaweedFS({
     }
   } catch (uploadErr: any) {
     throw new Error(
-      `Failed to upload image to S3 at ${endpoint}: ${uploadErr.message || uploadErr.code || uploadErr}`
+      `Failed to upload image to S3 at ${endpoint}: ${uploadErr.message || uploadErr.code || uploadErr}`,
     )
   }
 
@@ -324,7 +347,7 @@ export async function getObjectFromSeaweedFS(key: string): Promise<{
       new GetObjectCommand({
         Bucket: bucket,
         Key: key,
-      })
+      }),
     )
     if (!res.Body) return null
 
@@ -352,7 +375,7 @@ export async function deleteFromSeaweedFS(keyOrUrl: string): Promise<boolean> {
       new DeleteObjectCommand({
         Bucket: bucket,
         Key: key,
-      })
+      }),
     )
     return true
   } catch (err) {

@@ -8,9 +8,7 @@ export default function BetterAuthHeader() {
   const { data: session, isPending } = authClient.useSession()
 
   if (isPending) {
-    return (
-      <div className="h-8 w-24 bg-muted/60 rounded-lg animate-pulse" />
-    )
+    return <div className="h-8 w-24 bg-muted/60 rounded-lg animate-pulse" />
   }
 
   if (session?.user) {

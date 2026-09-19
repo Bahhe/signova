@@ -107,6 +107,8 @@ export const storefrontSettings = pgTable('storefront_settings', {
     .notNull()
     .default({}),
   metaPixelId: text('meta_pixel_id').default(''),
+  logoUrl: text('logo_url').default(''),
+  faviconUrl: text('favicon_url').default(''),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 

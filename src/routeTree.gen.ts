@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as PixelRouteImport } from './routes/pixel'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
@@ -33,11 +32,6 @@ const DashboardRoute = DashboardRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PixelRoute = PixelRouteImport.update({
-  id: '/pixel',
-  path: '/pixel',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -75,7 +69,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/pixel': typeof PixelRoute
   '/settings': typeof SettingsRoute
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
@@ -87,7 +80,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/pixel': typeof PixelRoute
   '/settings': typeof SettingsRoute
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
@@ -100,7 +92,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/pixel': typeof PixelRoute
   '/settings': typeof SettingsRoute
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
@@ -114,7 +105,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/login'
-    | '/pixel'
     | '/settings'
     | '/thank-you'
     | '/unauthorized'
@@ -126,7 +116,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/login'
-    | '/pixel'
     | '/settings'
     | '/thank-you'
     | '/unauthorized'
@@ -138,7 +127,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/login'
-    | '/pixel'
     | '/settings'
     | '/thank-you'
     | '/unauthorized'
@@ -151,7 +139,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
-  PixelRoute: typeof PixelRoute
   SettingsRoute: typeof SettingsRoute
   ThankYouRoute: typeof ThankYouRoute
   UnauthorizedRoute: typeof UnauthorizedRoute
@@ -181,13 +168,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pixel': {
-      id: '/pixel'
-      path: '/pixel'
-      fullPath: '/pixel'
-      preLoaderRoute: typeof PixelRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -239,7 +219,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
-  PixelRoute: PixelRoute,
   SettingsRoute: SettingsRoute,
   ThankYouRoute: ThankYouRoute,
   UnauthorizedRoute: UnauthorizedRoute,

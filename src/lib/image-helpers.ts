@@ -17,7 +17,7 @@ export async function optimizeImageFile(
   file: File,
   maxWidth = 1920,
   maxHeight = 1920,
-  quality = 0.85
+  quality = 0.85,
 ): Promise<{ url: string; size: number; name: string }> {
   // If file is SVG or small GIF, return as data URL directly
   if (file.type === 'image/svg+xml' || file.type === 'image/gif') {
@@ -87,14 +87,22 @@ export async function optimizeImageFile(
   })
 }
 
-export function reorderArray<T>(list: T[], startIndex: number, endIndex: number): T[] {
+export function reorderArray<T>(
+  list: T[],
+  startIndex: number,
+  endIndex: number,
+): T[] {
   const result = Array.from(list)
   const [removed] = result.splice(startIndex, 1)
   result.splice(endIndex, 0, removed)
   return result
 }
 
-export function moveItem<T>(list: T[], fromIndex: number, direction: 'prev' | 'next'): T[] {
+export function moveItem<T>(
+  list: T[],
+  fromIndex: number,
+  direction: 'prev' | 'next',
+): T[] {
   const toIndex = direction === 'prev' ? fromIndex - 1 : fromIndex + 1
   if (toIndex < 0 || toIndex >= list.length) return list
   return reorderArray(list, fromIndex, toIndex)

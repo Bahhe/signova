@@ -11,9 +11,12 @@ export function NotFound() {
       <div className="size-16 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center text-muted-foreground mb-6 shadow-xs">
         <FileQuestion className="size-8" />
       </div>
-      <h1 className="text-3xl font-extrabold tracking-tight mb-2">Page Not Found</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight mb-2">
+        Page Not Found
+      </h1>
       <p className="text-muted-foreground text-sm max-w-md mb-8 leading-relaxed">
-        The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+        The page you are looking for might have been removed, had its name
+        changed, or is temporarily unavailable.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <Link

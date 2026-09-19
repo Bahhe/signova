@@ -2,6 +2,7 @@ import * as React from 'react'
 import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router'
 import { authClient } from '#/lib/auth-client'
 import { getSessionServerFn } from '#/lib/server-auth'
+import { useStorefrontSettings } from '#/lib/use-storefront-settings'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
@@ -41,6 +42,7 @@ function LoginPage() {
   const navigate = useNavigate()
   const search = Route.useSearch()
   const redirectTarget = search.redirect || '/'
+  const { settings } = useStorefrontSettings()
 
   const [mode, setMode] = React.useState<'signin' | 'signup'>('signin')
   const [name, setName] = React.useState('')
@@ -62,37 +64,36 @@ function LoginPage() {
           return
         }
 
-        const res = await authClient.signUp.email({
-          name: name.trim(),
+        const { error: signUpError } = await authClient.signUp.email({
           email: email.trim(),
           password,
+          name: name.trim(),
         })
 
-        if (res.error) {
+        if (signUpError) {
           setError(
-            res.error.message || 'Failed to create account. Please try again.',
+            signUpError.message || 'Failed to create account',
           )
           setIsLoading(false)
           return
         }
       } else {
-        const res = await authClient.signIn.email({
+        const { error: signInError } = await authClient.signIn.email({
           email: email.trim(),
           password,
         })
 
-        if (res.error) {
-          setError(res.error.message || 'Invalid email or password.')
+        if (signInError) {
+          setError(signInError.message || 'Invalid email or password')
           setIsLoading(false)
           return
         }
       }
 
       // Successful auth - redirect
-      await navigate({ to: redirectTarget })
+      void navigate({ to: redirectTarget })
     } catch (err: any) {
-      console.error('Auth error:', err)
-      setError(err?.message || 'An unexpected authentication error occurred.')
+      setError(err?.message || 'An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -105,11 +106,19 @@ function LoginPage() {
         <header className="border-b border-border bg-card/60 backdrop-blur-md">
           <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5">
-              <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                S
-              </div>
+              {settings?.logoUrl ? (
+                <img
+                  src={settings.logoUrl}
+                  alt={settings.storeName || 'Store Logo'}
+                  className="h-8 w-auto max-w-[120px] object-contain rounded-md"
+                />
+              ) : (
+                <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                  {settings?.storeName ? settings.storeName.charAt(0).toUpperCase() : 'S'}
+                </div>
+              )}
               <span className="font-bold text-base tracking-tight">
-                Signova
+                {settings?.storeName || 'Signova'}
               </span>
             </a>
 

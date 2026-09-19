@@ -4,10 +4,12 @@ import type { Product } from './types.ts'
 // TanStack Start Server Functions
 // We dynamically import server/db-products inside handlers to guarantee that
 // PostgreSQL/pg/drizzle-orm server dependencies are completely excluded from client bundles.
-export const getProductsServerFn = createServerFn({ method: 'GET' }).handler(async () => {
-  const { getAllProducts } = await import('#/server/db-products')
-  return getAllProducts()
-})
+export const getProductsServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { getAllProducts } = await import('#/server/db-products')
+    return getAllProducts()
+  },
+)
 
 export const getProductBySlugServerFn = createServerFn({ method: 'GET' })
   .validator((slug: string) => slug)
@@ -28,7 +30,9 @@ export const saveProductServerFn = createServerFn({ method: 'POST' })
     }
     const role = (session.user as { role?: string }).role || 'user'
     if (role !== 'admin') {
-      throw new Error('Forbidden: Administrator role required to modify products')
+      throw new Error(
+        'Forbidden: Administrator role required to modify products',
+      )
     }
     const { saveProduct } = await import('#/server/db-products')
     return saveProduct(product)
@@ -46,7 +50,9 @@ export const deleteProductServerFn = createServerFn({ method: 'POST' })
     }
     const role = (session.user as { role?: string }).role || 'user'
     if (role !== 'admin') {
-      throw new Error('Forbidden: Administrator role required to delete products')
+      throw new Error(
+        'Forbidden: Administrator role required to delete products',
+      )
     }
     const { deleteProduct } = await import('#/server/db-products')
     return deleteProduct(id)

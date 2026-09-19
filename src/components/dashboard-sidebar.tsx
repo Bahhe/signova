@@ -1,8 +1,7 @@
 import * as React from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   Package,
-  Plus,
   Store,
   ExternalLink,
   LogOut,
@@ -10,9 +9,9 @@ import {
   Sparkles,
   Users,
   Settings,
-  BarChart3,
 } from 'lucide-react'
-import type { Product } from '#/lib/types'
+import type { Product, StorefrontSettings } from '#/lib/types'
+import { useStorefrontSettings } from '#/lib/use-storefront-settings'
 import { authClient } from '#/lib/auth-client'
 import {
   Sidebar,
@@ -33,10 +32,19 @@ import { Button } from '#/components/ui/button'
 
 interface DashboardSidebarProps {
   products: Product[]
-  currentRoute?: 'products' | 'users' | 'settings' | 'pixel'
+  currentRoute?: 'products' | 'users' | 'settings'
   selectedCategory?: string
   onSelectCategory?: (category: string) => void
   onNewProduct?: () => void
+  session?: {
+    user: {
+      name?: string | null
+      email: string
+      image?: string | null
+      role?: string | null
+    }
+  } | null
+  settings?: StorefrontSettings | null
 }
 
 export function DashboardSidebar({
@@ -44,10 +52,21 @@ export function DashboardSidebar({
   currentRoute = 'products',
   selectedCategory = 'All',
   onSelectCategory,
-  onNewProduct,
+  session: propSession,
+  settings: propSettings,
 }: DashboardSidebarProps) {
   const navigate = useNavigate()
-  const { data: session } = authClient.useSession()
+  const [mounted, setMounted] = React.useState(false)
+  const { data: clientSession } = authClient.useSession()
+  const { settings } = useStorefrontSettings(propSettings)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Use session passed from route context (deterministic across SSR & hydration),
+  // or fallback to client-side Better Auth session after initial mount
+  const session = propSession ?? (mounted ? clientSession : null)
 
   const categories = React.useMemo(() => {
     const set = new Set<string>()
@@ -62,14 +81,6 @@ export function DashboardSidebar({
     void navigate({ to: '/login' })
   }
 
-  const handleNewProductClick = () => {
-    if (onNewProduct) {
-      onNewProduct()
-    } else {
-      void navigate({ to: '/' })
-    }
-  }
-
   const userInitials = session?.user.name
     ? session.user.name.charAt(0).toUpperCase()
     : session?.user.email.charAt(0).toUpperCase() || 'A'
@@ -79,12 +90,20 @@ export function DashboardSidebar({
       {/* Brand Header */}
       <SidebarHeader className="border-b border-border/60 p-3">
         <div className="flex items-center gap-2.5">
-          <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-            S
-          </div>
+          {settings?.logoUrl ? (
+            <img
+              src={settings.logoUrl}
+              alt={settings.storeName || 'Store Logo'}
+              className="size-8 rounded-lg object-contain shrink-0 bg-background border border-border/50 p-0.5"
+            />
+          ) : (
+            <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+              {settings?.storeName ? settings.storeName.charAt(0).toUpperCase() : 'S'}
+            </div>
+          )}
           <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
             <span className="font-bold text-sm tracking-tight truncate leading-tight">
-              SignovaPub
+              {settings?.storeName || 'SignovaPub'}
             </span>
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
               Admin Studio
@@ -107,8 +126,8 @@ export function DashboardSidebar({
                   }
                   tooltip="All Products"
                 >
-                  <a
-                    href="/"
+                  <Link
+                    to="/"
                     onClick={(e) => {
                       if (currentRoute === 'products' && onSelectCategory) {
                         e.preventDefault()
@@ -118,19 +137,9 @@ export function DashboardSidebar({
                   >
                     <Package className="size-4" />
                     <span>All Products</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
                 <SidebarMenuBadge>{products.length}</SidebarMenuBadge>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleNewProductClick}
-                  tooltip="New Product"
-                >
-                  <Plus className="size-4" />
-                  <span>New Product</span>
-                </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
@@ -139,10 +148,10 @@ export function DashboardSidebar({
                   isActive={currentRoute === 'users'}
                   tooltip="User Management"
                 >
-                  <a href="/users">
+                  <Link to="/users">
                     <Users className="size-4" />
                     <span>Users & Roles</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -150,25 +159,12 @@ export function DashboardSidebar({
                 <SidebarMenuButton
                   asChild
                   isActive={currentRoute === 'settings'}
-                  tooltip="Storefront & Footer Settings"
+                  tooltip="Settings"
                 >
-                  <a href="/settings">
+                  <Link to="/settings">
                     <Settings className="size-4" />
-                    <span>Storefront & Footer</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={currentRoute === 'pixel'}
-                  tooltip="Meta Pixel Integration"
-                >
-                  <a href="/pixel">
-                    <BarChart3 className="size-4" />
-                    <span>Meta Pixel</span>
-                  </a>
+                    <span>Settings</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

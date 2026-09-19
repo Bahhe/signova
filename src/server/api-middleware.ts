@@ -44,7 +44,7 @@ export async function handleApiWeb(request: Request): Promise<Response> {
       console.error('Error in /api/auth handler:', err)
       return Response.json(
         { error: err.message || 'Auth failed' },
-        { status: 500 }
+        { status: 500 },
       )
     }
   }
@@ -73,12 +73,15 @@ export async function handleApiWeb(request: Request): Promise<Response> {
         headers.set('ETag', result.etag)
       }
 
-      return new Response(result.body, {
+      return new Response(result.body as unknown as BodyInit, {
         status: 200,
         headers,
       })
     } catch (err: any) {
-      console.error(`[Image Proxy] Error serving image '${key}':`, err.message || err)
+      console.error(
+        `[Image Proxy] Error serving image '${key}':`,
+        err.message || err,
+      )
       return new Response('Image Not Found', { status: 404 })
     }
   }
@@ -99,7 +102,10 @@ export async function handleApiWeb(request: Request): Promise<Response> {
       const result = await testS3Connection()
       return Response.json(result)
     } catch (err: any) {
-      return Response.json({ ok: false, error: err.message || String(err) }, { status: 500 })
+      return Response.json(
+        { ok: false, error: err.message || String(err) },
+        { status: 500 },
+      )
     }
   }
 
@@ -109,14 +115,14 @@ export async function handleApiWeb(request: Request): Promise<Response> {
     if (!session) {
       return Response.json(
         { error: 'Unauthorized: Please sign in to upload images' },
-        { status: 401 }
+        { status: 401 },
       )
     }
     const role = (session.user as { role?: string }).role || 'user'
     if (role !== 'admin') {
       return Response.json(
         { error: 'Forbidden: Admin role required to upload images' },
-        { status: 403 }
+        { status: 403 },
       )
     }
 
@@ -125,16 +131,19 @@ export async function handleApiWeb(request: Request): Promise<Response> {
       if (!data?.base64Data) {
         return Response.json(
           { error: 'Invalid payload: missing base64Data' },
-          { status: 400 }
+          { status: 400 },
         )
       }
       const uploaded = await uploadToSeaweedFS(data)
       return Response.json(uploaded)
     } catch (err: any) {
-      console.error('[SeaweedFS Upload] Failed to upload image:', err.message || err)
+      console.error(
+        '[SeaweedFS Upload] Failed to upload image:',
+        err.message || err,
+      )
       return Response.json(
         { error: err.message || 'Upload failed' },
-        { status: 502 }
+        { status: 502 },
       )
     }
   }
@@ -155,14 +164,14 @@ export async function handleApiWeb(request: Request): Promise<Response> {
       if (!session) {
         return Response.json(
           { error: 'Unauthorized: Please sign in to save products' },
-          { status: 401 }
+          { status: 401 },
         )
       }
       const role = (session.user as { role?: string }).role || 'user'
       if (role !== 'admin') {
         return Response.json(
           { error: 'Forbidden: Admin role required to save products' },
-          { status: 403 }
+          { status: 403 },
         )
       }
 
@@ -199,14 +208,14 @@ export async function handleApiWeb(request: Request): Promise<Response> {
         if (!session) {
           return Response.json(
             { error: 'Unauthorized: Please sign in to delete products' },
-            { status: 401 }
+            { status: 401 },
           )
         }
         const role = (session.user as { role?: string }).role || 'user'
         if (role !== 'admin') {
           return Response.json(
             { error: 'Forbidden: Admin role required to delete products' },
-            { status: 403 }
+            { status: 403 },
           )
         }
 
@@ -235,7 +244,7 @@ export async function handleApiWeb(request: Request): Promise<Response> {
         console.error('Error in /api/orders POST:', err)
         return Response.json(
           { success: false, error: err.message || 'Failed to submit order' },
-          { status: 500 }
+          { status: 500 },
         )
       }
     }
@@ -262,7 +271,7 @@ export async function handleApiWeb(request: Request): Promise<Response> {
 // Helper for Connect / Vite dev server middleware
 export async function handleApiRequest(
   req: IncomingMessage,
-  res: ServerResponse
+  res: ServerResponse,
 ): Promise<boolean> {
   const url = req.url || ''
   if (!url.startsWith('/api/')) {
@@ -289,7 +298,9 @@ export async function handleApiRequest(
   if (method !== 'GET' && method !== 'HEAD') {
     const chunks: Buffer[] = []
     await new Promise<void>((resolve, reject) => {
-      req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)))
+      req.on('data', (chunk) =>
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+      )
       req.on('end', () => resolve())
       req.on('error', reject)
     })

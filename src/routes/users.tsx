@@ -2,7 +2,6 @@ import * as React from 'react'
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import {
   Users,
-  Shield,
   ShieldCheck,
   ShieldAlert,
   Search,
@@ -15,12 +14,13 @@ import {
   Clock,
 } from 'lucide-react'
 import { getSessionServerFn } from '#/lib/server-auth'
+import { getProductsServerFn } from '#/lib/server-products'
 import {
   getUsersServerFn,
   setUserRoleServerFn,
   deleteUserServerFn,
-  type UserRecord,
 } from '#/lib/server-users'
+import type { UserRecord } from '#/lib/server-users'
 import { useProducts } from '#/lib/use-products'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { Button } from '#/components/ui/button'
@@ -41,14 +41,17 @@ export const Route = createFileRoute('/users')({
     const session = await getSessionServerFn()
     if (!session) {
       throw redirect({
-        to: '/p',
+        to: '/login',
+        search: {
+          redirect: '/users',
+        },
       })
     }
 
     const role = (session.user as { role?: string }).role || 'user'
     if (role !== 'admin') {
       throw redirect({
-        to: '/p',
+        to: '/unauthorized',
       })
     }
 
@@ -58,10 +61,13 @@ export const Route = createFileRoute('/users')({
   },
   loader: async () => {
     try {
-      const users = await getUsersServerFn()
-      return { initialUsers: users }
+      const [users, products] = await Promise.all([
+        getUsersServerFn(),
+        getProductsServerFn().catch(() => []),
+      ])
+      return { initialUsers: users, initialProducts: products }
     } catch {
-      return { initialUsers: [] }
+      return { initialUsers: [], initialProducts: [] }
     }
   },
   head: () => ({
@@ -79,8 +85,8 @@ export const Route = createFileRoute('/users')({
 function UsersManagementPage() {
   const router = useRouter()
   const { session } = Route.useRouteContext()
-  const { initialUsers } = Route.useLoaderData()
-  const { products } = useProducts()
+  const { initialUsers, initialProducts } = Route.useLoaderData()
+  const { products } = useProducts(initialProducts)
 
   const [users, setUsers] = React.useState<UserRecord[]>(initialUsers)
   const [search, setSearch] = React.useState('')
@@ -237,7 +243,11 @@ function UsersManagementPage() {
   return (
     <DirectionProvider dir="ltr">
       <SidebarProvider>
-        <DashboardSidebar products={products} currentRoute="users" />
+        <DashboardSidebar
+          products={products}
+          currentRoute="users"
+          session={session}
+        />
         <SidebarInset className="min-h-screen bg-background text-foreground transition-colors flex flex-col">
           {/* Inset Top Bar */}
           <header className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-30 h-14 flex items-center justify-between px-4">
@@ -590,26 +600,6 @@ function UsersManagementPage() {
                 </div>
               )}
             </Card>
-
-            {/* Security Notice Footer Card */}
-            <div className="bg-card/50 border border-border/60 rounded-xl p-4 flex items-start gap-3 text-xs text-muted-foreground">
-              <Shield className="size-4 shrink-0 text-primary mt-0.5" />
-              <div className="space-y-1">
-                <span className="font-semibold text-foreground">
-                  Role Permissions Note:
-                </span>
-                <p>
-                  Users with the <strong>Admin</strong> role can view this
-                  dashboard, create and publish products, upload media, and
-                  manage other user accounts. Non-admin users are restricted to
-                  the public showcase (
-                  <code className="bg-muted px-1 py-0.5 rounded text-foreground">
-                    /p
-                  </code>
-                  ) and cannot access studio management tools.
-                </p>
-              </div>
-            </div>
           </main>
         </SidebarInset>
       </SidebarProvider>

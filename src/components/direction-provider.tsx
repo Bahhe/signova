@@ -13,7 +13,11 @@ export interface DirectionProviderProps {
  * (Tooltips, Selects, Menus, Sliders, Sheets, etc.) observe the correct direction.
  * Automatically synchronizes document root dir and lang attributes.
  */
-export function DirectionProvider({ dir, children, className = '' }: DirectionProviderProps) {
+export function DirectionProvider({
+  dir,
+  children,
+  className = '',
+}: DirectionProviderProps) {
   React.useEffect(() => {
     const prevDir = document.documentElement.dir || 'ltr'
     const prevLang = document.documentElement.lang || 'en'

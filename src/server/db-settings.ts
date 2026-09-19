@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import type { DbStorefrontSettings } from '#/db/schema.ts'
 import { storefrontSettings } from '#/db/schema.ts'
@@ -27,6 +27,8 @@ function mapDbToSettings(row: DbStorefrontSettings): StorefrontSettings {
     workingHours: row.workingHours || DEFAULT_STOREFRONT_SETTINGS.workingHours,
     socialLinks: row.socialLinks,
     metaPixelId: row.metaPixelId || '',
+    logoUrl: row.logoUrl || '',
+    faviconUrl: row.faviconUrl || '',
     updatedAt: row.updatedAt.toISOString(),
   }
 }
@@ -40,6 +42,8 @@ function readFromFile(): StorefrontSettings {
         ...DEFAULT_STOREFRONT_SETTINGS,
         ...parsed,
         metaPixelId: parsed.metaPixelId || '',
+        logoUrl: parsed.logoUrl || '',
+        faviconUrl: parsed.faviconUrl || '',
         socialLinks: {
           ...DEFAULT_STOREFRONT_SETTINGS.socialLinks,
           ...(parsed.socialLinks || {}),
@@ -69,6 +73,15 @@ let isInitialized = false
 async function ensureSeed(): Promise<void> {
   if (isInitialized) return
   try {
+    try {
+      await db.execute(sql`
+        ALTER TABLE storefront_settings ADD COLUMN IF NOT EXISTS logo_url text DEFAULT '';
+        ALTER TABLE storefront_settings ADD COLUMN IF NOT EXISTS favicon_url text DEFAULT '';
+      `)
+    } catch {
+      // Safe to ignore if table doesn't exist yet
+    }
+
     const rows = await db
       .select()
       .from(storefrontSettings)
@@ -90,6 +103,8 @@ async function ensureSeed(): Promise<void> {
         workingHours: initial.workingHours || '',
         socialLinks: initial.socialLinks,
         metaPixelId: initial.metaPixelId || '',
+        logoUrl: initial.logoUrl || '',
+        faviconUrl: initial.faviconUrl || '',
         updatedAt: new Date(),
       })
       writeToFile(initial)
@@ -112,7 +127,6 @@ export async function getStorefrontSettings(): Promise<StorefrontSettings> {
 
     if (rows.length > 0) {
       const mapped = mapDbToSettings(rows[0])
-      writeToFile(mapped)
       return mapped
     }
   } catch (err) {
@@ -153,7 +167,15 @@ export async function updateStorefrontSettings(
     metaPixelId:
       settings.metaPixelId !== undefined
         ? settings.metaPixelId
-        : (current.metaPixelId || ''),
+        : current.metaPixelId || '',
+    logoUrl:
+      settings.logoUrl !== undefined
+        ? settings.logoUrl
+        : current.logoUrl || '',
+    faviconUrl:
+      settings.faviconUrl !== undefined
+        ? settings.faviconUrl
+        : current.faviconUrl || '',
     socialLinks: {
       ...current.socialLinks,
       ...(settings.socialLinks || {}),
@@ -177,6 +199,8 @@ export async function updateStorefrontSettings(
         workingHours: updated.workingHours,
         socialLinks: updated.socialLinks,
         metaPixelId: updated.metaPixelId,
+        logoUrl: updated.logoUrl,
+        faviconUrl: updated.faviconUrl,
         updatedAt: now,
       })
       .onConflictDoUpdate({
@@ -192,6 +216,8 @@ export async function updateStorefrontSettings(
           workingHours: updated.workingHours,
           socialLinks: updated.socialLinks,
           metaPixelId: updated.metaPixelId,
+          logoUrl: updated.logoUrl,
+          faviconUrl: updated.faviconUrl,
           updatedAt: now,
         },
       })

@@ -96,7 +96,8 @@ export function normalizePrivateKey(rawKey?: string): string | undefined {
   // If user pasted only the base64 body without headers (starts with MII...)
   const cleanedBody = key.replace(/[^A-Za-z0-9+/=]/g, '')
   if (cleanedBody.startsWith('MII') && cleanedBody.length > 500) {
-    const formattedBody = cleanedBody.match(/.{1,64}/g)?.join('\n') || cleanedBody
+    const formattedBody =
+      cleanedBody.match(/.{1,64}/g)?.join('\n') || cleanedBody
     return `-----BEGIN PRIVATE KEY-----\n${formattedBody}\n-----END PRIVATE KEY-----\n`
   }
 
@@ -108,7 +109,8 @@ function getGoogleCredentials(): GoogleCredentials {
   let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
   const sheetId = process.env.GOOGLE_SHEET_ID
   const sheetRange = process.env.GOOGLE_SHEET_RANGE || 'Sheet1'
-  const webhookUrl = process.env.GOOGLE_SHEET_WEBHOOK_URL || process.env.GOOGLE_APPS_SCRIPT_URL
+  const webhookUrl =
+    process.env.GOOGLE_SHEET_WEBHOOK_URL || process.env.GOOGLE_APPS_SCRIPT_URL
 
   // Check if a full service account JSON key string or path was provided
   const rawKeyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON
@@ -184,7 +186,10 @@ function getGoogleCredentials(): GoogleCredentials {
 /**
  * Generate an OAuth2 Bearer token for Google Sheets API v4 using a Service Account Private Key.
  */
-async function getGoogleOAuth2AccessToken(clientEmail: string, privateKey: string): Promise<string> {
+async function getGoogleOAuth2AccessToken(
+  clientEmail: string,
+  privateKey: string,
+): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
   const header = {
     alg: 'RS256',
@@ -198,8 +203,12 @@ async function getGoogleOAuth2AccessToken(clientEmail: string, privateKey: strin
     iat: now,
   }
 
-  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url')
-  const encodedClaimSet = Buffer.from(JSON.stringify(claimSet)).toString('base64url')
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString(
+    'base64url',
+  )
+  const encodedClaimSet = Buffer.from(JSON.stringify(claimSet)).toString(
+    'base64url',
+  )
   const unsignedToken = `${encodedHeader}.${encodedClaimSet}`
 
   let signature: string
@@ -209,7 +218,7 @@ async function getGoogleOAuth2AccessToken(clientEmail: string, privateKey: strin
     signature = signer.sign(privateKey, 'base64url')
   } catch (err: any) {
     throw new Error(
-      `Private key sign error (${err.message}). Ensure GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY is a valid RSA private key.`
+      `Private key sign error (${err.message}). Ensure GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY is a valid RSA private key.`,
     )
   }
   const jwt = `${unsignedToken}.${signature}`
@@ -265,7 +274,7 @@ function saveOrderToLocalFallback(order: Order) {
 async function ensureHeadersInGoogleSheet(
   accessToken: string,
   sheetId: string,
-  rangeName: string
+  rangeName: string,
 ): Promise<void> {
   try {
     const checkUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(`${rangeName}!A1:M1`)}`
@@ -275,7 +284,12 @@ async function ensureHeadersInGoogleSheet(
 
     if (res.ok) {
       const data = (await res.json()) as { values?: string[][] }
-      if (!data.values || data.values.length === 0 || !data.values[0] || data.values[0].length === 0) {
+      if (
+        !data.values ||
+        data.values.length === 0 ||
+        !data.values[0] ||
+        data.values[0].length === 0
+      ) {
         // Sheet is empty, write header row
         const headers = [
           'Order ID',
@@ -318,7 +332,7 @@ async function ensureHeadersInGoogleSheet(
  */
 async function submitViaServiceAccount(
   order: Order,
-  creds: GoogleCredentials
+  creds: GoogleCredentials,
 ): Promise<OrderSubmissionResult> {
   const { clientEmail, privateKey, sheetId, sheetRange = 'Sheet1' } = creds
   if (!clientEmail || !privateKey || !sheetId) {
@@ -345,7 +359,9 @@ async function submitViaServiceAccount(
     order.phone,
     order.wilaya,
     order.commune,
-    order.deliveryType === 'home delivery' ? 'Home Delivery (À Domicile)' : 'Stop Desk (Point Relais)',
+    order.deliveryType === 'home delivery'
+      ? 'Home Delivery (À Domicile)'
+      : 'Stop Desk (Point Relais)',
     order.productTitle,
     order.productPrice || 'N/A',
     order.quantity,
@@ -373,12 +389,12 @@ async function submitViaServiceAccount(
     const errBody = await appendRes.text()
     if (appendRes.status === 403) {
       throw new Error(
-        `Google Sheets API Permission Denied (403): Please share your Google Sheet (ID: ${sheetId}) with the service account email: ${clientEmail} as 'Editor'.`
+        `Google Sheets API Permission Denied (403): Please share your Google Sheet (ID: ${sheetId}) with the service account email: ${clientEmail} as 'Editor'.`,
       )
     }
     if (appendRes.status === 404) {
       throw new Error(
-        `Google Sheet Not Found (404): Please verify that GOOGLE_SHEET_ID (${sheetId}) is correct.`
+        `Google Sheet Not Found (404): Please verify that GOOGLE_SHEET_ID (${sheetId}) is correct.`,
       )
     }
     throw new Error(`Google Sheets API error (${appendRes.status}): ${errBody}`)
@@ -394,7 +410,10 @@ async function submitViaServiceAccount(
 /**
  * Submit an order using a Google Apps Script Webhook deployment URL
  */
-async function submitViaWebhook(order: Order, webhookUrl: string): Promise<OrderSubmissionResult> {
+async function submitViaWebhook(
+  order: Order,
+  webhookUrl: string,
+): Promise<OrderSubmissionResult> {
   const formattedDate = new Date(order.createdAt).toLocaleString('fr-DZ', {
     timeZone: 'Africa/Algiers',
   })
@@ -426,7 +445,9 @@ async function submitViaWebhook(order: Order, webhookUrl: string): Promise<Order
 
   if (!res.ok) {
     const errorText = await res.text()
-    throw new Error(`Google Apps Script webhook returned status ${res.status}: ${errorText}`)
+    throw new Error(
+      `Google Apps Script webhook returned status ${res.status}: ${errorText}`,
+    )
   }
 
   return {
@@ -442,7 +463,9 @@ async function submitViaWebhook(order: Order, webhookUrl: string): Promise<Order
  * 2. If Google Service Account or Webhook is configured, syncs to Google Sheets.
  * 3. If neither is configured, logs a helpful guidance message and completes the order in development/fallback mode.
  */
-export async function submitOrderToGoogleSheets(order: Order): Promise<OrderSubmissionResult> {
+export async function submitOrderToGoogleSheets(
+  order: Order,
+): Promise<OrderSubmissionResult> {
   // Always save locally first so customer data is never lost
   saveOrderToLocalFallback(order)
 
@@ -451,22 +474,36 @@ export async function submitOrderToGoogleSheets(order: Order): Promise<OrderSubm
   // 1. Google Service Account method (Official API v4)
   if (creds.clientEmail && creds.privateKey && creds.sheetId) {
     try {
-      console.log(`[Google Sheets] Submitting order ${order.id} to sheet ${creds.sheetId}...`)
+      console.log(
+        `[Google Sheets] Submitting order ${order.id} to sheet ${creds.sheetId}...`,
+      )
       const result = await submitViaServiceAccount(order, creds)
-      console.log(`[Google Sheets] Order ${order.id} saved successfully to Google Sheets!`)
+      console.log(
+        `[Google Sheets] Order ${order.id} saved successfully to Google Sheets!`,
+      )
       return result
     } catch (err: any) {
-      console.error(`[Google Sheets] Failed to submit to Google Sheets:`, err.message || err)
+      console.error(
+        `[Google Sheets] Failed to submit to Google Sheets:`,
+        err.message || err,
+      )
 
       // If Webhook fallback is available, attempt it
       if (creds.webhookUrl) {
         try {
-          console.log(`[Google Sheets Webhook] Attempting webhook fallback for order ${order.id}...`)
+          console.log(
+            `[Google Sheets Webhook] Attempting webhook fallback for order ${order.id}...`,
+          )
           const webhookResult = await submitViaWebhook(order, creds.webhookUrl)
-          console.log(`[Google Sheets Webhook] Order ${order.id} forwarded successfully via fallback!`)
+          console.log(
+            `[Google Sheets Webhook] Order ${order.id} forwarded successfully via fallback!`,
+          )
           return webhookResult
         } catch (webhookErr: any) {
-          console.error(`[Google Sheets Webhook] Fallback also failed:`, webhookErr.message || webhookErr)
+          console.error(
+            `[Google Sheets Webhook] Fallback also failed:`,
+            webhookErr.message || webhookErr,
+          )
         }
       }
 
@@ -484,10 +521,15 @@ export async function submitOrderToGoogleSheets(order: Order): Promise<OrderSubm
     try {
       console.log(`[Google Sheets Webhook] Forwarding order ${order.id}...`)
       const result = await submitViaWebhook(order, creds.webhookUrl)
-      console.log(`[Google Sheets Webhook] Order ${order.id} forwarded successfully!`)
+      console.log(
+        `[Google Sheets Webhook] Order ${order.id} forwarded successfully!`,
+      )
       return result
     } catch (err: any) {
-      console.error(`[Google Sheets Webhook] Failed to forward order:`, err.message || err)
+      console.error(
+        `[Google Sheets Webhook] Failed to forward order:`,
+        err.message || err,
+      )
       return {
         success: true,
         orderId: order.id,
@@ -503,13 +545,14 @@ export async function submitOrderToGoogleSheets(order: Order): Promise<OrderSubm
       `Note: Google Sheets credentials are not configured yet in .env.\n` +
       `Configure GOOGLE_SHEET_ID and GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY\n` +
       `or GOOGLE_SHEET_WEBHOOK_URL to sync directly with your Google Sheet.\n` +
-      `The order has been safely saved in data/orders.json.`
+      `The order has been safely saved in data/orders.json.`,
   )
 
   return {
     success: true,
     orderId: order.id,
     simulated: true,
-    message: 'Order placed successfully! (Recorded locally in data/orders.json)',
+    message:
+      'Order placed successfully! (Recorded locally in data/orders.json)',
   }
 }

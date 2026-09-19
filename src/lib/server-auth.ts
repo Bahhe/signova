@@ -14,5 +14,5 @@ export const getSessionServerFn = createServerFn({ method: 'GET' }).handler(
       console.error('Error getting session in getSessionServerFn:', err)
       return null
     }
-  }
+  },
 )

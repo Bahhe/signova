@@ -1,4 +1,10 @@
-import { ExternalLink, Edit2, Trash2, Image as ImageIcon, EyeOff } from 'lucide-react'
+import {
+  ExternalLink,
+  Edit2,
+  Trash2,
+  Image as ImageIcon,
+  EyeOff,
+} from 'lucide-react'
 import type { Product } from '#/lib/types'
 import { Button } from './ui/button'
 

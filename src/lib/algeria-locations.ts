@@ -69,12 +69,16 @@ const WILAYA_NAMES: Record<string, { name: string; ar_name: string }> = {
   '48': { name: 'Relizane', ar_name: 'غليزان' },
 }
 
-export const ALL_COMMUNES: CommuneLocation[] = locationsData as CommuneLocation[]
+export const ALL_COMMUNES: CommuneLocation[] =
+  locationsData as CommuneLocation[]
 
 // Generate sorted Wilayas list (1 to 48)
 export const WILAYAS: Wilaya[] = Array.from({ length: 48 }, (_, i) => {
   const code = String(i + 1)
-  const info = WILAYA_NAMES[code] || { name: `Wilaya ${code}`, ar_name: `ولاية ${code}` }
+  const info = WILAYA_NAMES[code] || {
+    name: `Wilaya ${code}`,
+    ar_name: `ولاية ${code}`,
+  }
   return {
     code,
     name: info.name,

@@ -18,8 +18,12 @@ function mapDbToProduct(row: DbProduct): Product {
     ctaText: row.ctaText || 'Order Now',
     ctaUrl: row.ctaUrl || '#order',
     published: row.published,
-    createdAt: row.createdAt ? row.createdAt.toISOString() : new Date().toISOString(),
-    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : new Date().toISOString(),
+    createdAt: row.createdAt
+      ? row.createdAt.toISOString()
+      : new Date().toISOString(),
+    updatedAt: row.updatedAt
+      ? row.updatedAt.toISOString()
+      : new Date().toISOString(),
   }
 }
 
@@ -85,7 +89,11 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     return mapDbToProduct(rows[0])
   } catch (err) {
     console.error('Error in getProductBySlug from PostgreSQL:', err)
-    return INITIAL_PRODUCTS.find((p) => p.slug.toLowerCase() === slug.toLowerCase()) || null
+    return (
+      INITIAL_PRODUCTS.find(
+        (p) => p.slug.toLowerCase() === slug.toLowerCase(),
+      ) || null
+    )
   }
 }
 
@@ -111,7 +119,10 @@ export async function saveProduct(product: Product): Promise<Product> {
             size: uploaded.size,
           })
         } catch (uploadErr) {
-          console.warn('[saveProduct] Could not upload base64 image to S3, keeping original:', uploadErr)
+          console.warn(
+            '[saveProduct] Could not upload base64 image to S3, keeping original:',
+            uploadErr,
+          )
           cleanedImages.push({
             id: img.id,
             url: img.url,

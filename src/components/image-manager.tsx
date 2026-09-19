@@ -59,8 +59,12 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
       }).finally(() => clearTimeout(timeoutId))
 
       if (!res.ok) {
-        const errJson = (await res.json().catch(() => ({}))) as { error?: string }
-        throw new Error(errJson.error || `Upload failed with status ${res.status}`)
+        const errJson = (await res.json().catch(() => ({}))) as {
+          error?: string
+        }
+        throw new Error(
+          errJson.error || `Upload failed with status ${res.status}`,
+        )
       }
 
       const uploaded = (await res.json()) as ProductImage
@@ -76,7 +80,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
               isUploading: false,
               error: undefined,
             }
-          : img
+          : img,
       )
       fileMapRef.current.delete(tempId)
       onChange(updated)
@@ -88,7 +92,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
           : err.message || 'Failed to upload image'
 
       setUploadError(
-        `Failed to upload '${file.name}' to storage: ${errorMsg}. Please verify your SeaweedFS or S3 endpoint configuration.`
+        `Failed to upload '${file.name}' to storage: ${errorMsg}. Please verify your SeaweedFS or S3 endpoint configuration.`,
       )
 
       // Mark the specific image item with error (DO NOT fallback to raw base64!)
@@ -99,7 +103,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
               isUploading: false,
               error: errorMsg,
             }
-          : img
+          : img,
       )
       onChange(updated)
     }
@@ -107,33 +111,37 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
 
   // Handle newly selected or dropped files
   const handleFiles = async (files: FileList | File[]) => {
-    const fileArray = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    const fileArray = Array.from(files).filter((f) =>
+      f.type.startsWith('image/'),
+    )
     if (fileArray.length === 0) return
 
     setUploadError(null)
 
     // 1. Instantly create optimistic preview items with object URLs (0ms delay)
-    const newItems: { item: ProductImage; file: File }[] = fileArray.map((file) => {
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
-      fileMapRef.current.set(tempId, file)
-      return {
-        item: {
-          id: tempId,
-          url: URL.createObjectURL(file),
-          name: file.name,
-          size: file.size,
-          isUploading: true,
-        },
-        file,
-      }
-    })
+    const newItems: { item: ProductImage; file: File }[] = fileArray.map(
+      (file) => {
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+        fileMapRef.current.set(tempId, file)
+        return {
+          item: {
+            id: tempId,
+            url: URL.createObjectURL(file),
+            name: file.name,
+            size: file.size,
+            isUploading: true,
+          },
+          file,
+        }
+      },
+    )
 
     const nextImages = [...imagesRef.current, ...newItems.map((n) => n.item)]
     onChange(nextImages)
 
     // 2. Upload files concurrently in the background
     await Promise.allSettled(
-      newItems.map(({ item, file }) => uploadSingleFile(item.id, file))
+      newItems.map(({ item, file }) => uploadSingleFile(item.id, file)),
     )
 
     if (fileInputRef.current) {
@@ -155,16 +163,20 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
 
     setUploadError(null)
     const updated = images.map((img) =>
-      img.id === id ? { ...img, isUploading: true, error: undefined } : img
+      img.id === id ? { ...img, isUploading: true, error: undefined } : img,
     )
     onChange(updated)
     void uploadSingleFile(id, file)
   }
 
   // Re-upload a base64 image (e.g. from previously saved state)
-  const uploadBase64Directly = async (id: string, base64Data: string, filename: string) => {
+  const uploadBase64Directly = async (
+    id: string,
+    base64Data: string,
+    filename: string,
+  ) => {
     const updated = images.map((img) =>
-      img.id === id ? { ...img, isUploading: true, error: undefined } : img
+      img.id === id ? { ...img, isUploading: true, error: undefined } : img,
     )
     onChange(updated)
     setUploadError(null)
@@ -180,8 +192,12 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
       })
 
       if (!res.ok) {
-        const errJson = (await res.json().catch(() => ({}))) as { error?: string }
-        throw new Error(errJson.error || `Upload failed with status ${res.status}`)
+        const errJson = (await res.json().catch(() => ({}))) as {
+          error?: string
+        }
+        throw new Error(
+          errJson.error || `Upload failed with status ${res.status}`,
+        )
       }
 
       const uploaded = (await res.json()) as ProductImage
@@ -195,14 +211,16 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
               isUploading: false,
               error: undefined,
             }
-          : img
+          : img,
       )
       onChange(finalImages)
     } catch (err: any) {
       console.error('[Base64 Migration Error]', err)
       setUploadError(`Failed to migrate image to S3: ${err.message}`)
       const finalImages = imagesRef.current.map((img) =>
-        img.id === id ? { ...img, isUploading: false, error: err.message } : img
+        img.id === id
+          ? { ...img, isUploading: false, error: err.message }
+          : img,
       )
       onChange(finalImages)
     }
@@ -294,7 +312,10 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
             Images ({images.length})
           </Label>
           {isAnyUploading && (
-            <Badge variant="secondary" className="gap-1 text-[11px] py-0 px-1.5 animate-pulse">
+            <Badge
+              variant="secondary"
+              className="gap-1 text-[11px] py-0 px-1.5 animate-pulse"
+            >
               <RotateCw className="size-3 animate-spin text-primary" />
               <span>Uploading to storage...</span>
             </Badge>
@@ -323,7 +344,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
             <AlertCircle className="size-4 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="font-semibold">Image Upload Error</p>
-              <p className="text-[11px] opacity-90 leading-relaxed">{uploadError}</p>
+              <p className="text-[11px] opacity-90 leading-relaxed">
+                {uploadError}
+              </p>
             </div>
           </div>
           <button
@@ -371,7 +394,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
               Click to select or drag images here
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Images are optimized and stored in SeaweedFS / S3 bucket. Drag or use arrows to reorder.
+              Drag or use arrows to reorder.
             </p>
           </div>
         </div>
@@ -405,7 +428,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                 onDrop={(e) => handleItemDrop(e, idx)}
                 onDragEnd={handleItemDragEnd}
                 className={`group relative flex flex-col rounded-lg border overflow-hidden bg-card transition-all ${
-                  isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary' : 'opacity-100'
+                  isBeingDragged
+                    ? 'opacity-40 scale-95 border-dashed border-primary'
+                    : 'opacity-100'
                 } ${
                   isDragTarget && !isBeingDragged
                     ? 'ring-2 ring-primary ring-offset-2 scale-[1.02]'
@@ -424,7 +449,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                     src={img.url}
                     alt={img.name || `Image #${idx + 1}`}
                     className={`h-full w-full object-cover transition-transform duration-300 ${
-                      isUploading ? 'opacity-60 blur-xs' : 'group-hover:scale-105'
+                      isUploading
+                        ? 'opacity-60 blur-xs'
+                        : 'group-hover:scale-105'
                     }`}
                     loading="lazy"
                   />
@@ -536,7 +563,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                   {isBase64 && !isUploading ? (
                     <button
                       type="button"
-                      onClick={() => uploadBase64Directly(img.id, img.url, img.name)}
+                      onClick={() =>
+                        uploadBase64Directly(img.id, img.url, img.name)
+                      }
                       className="text-[10px] px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-medium transition-colors"
                       title="Upload this base64 image into SeaweedFS bucket"
                     >
@@ -552,7 +581,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                       Make Cover
                     </button>
                   ) : (
-                    <span className="text-[10px] font-medium text-muted-foreground">#1</span>
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      #1
+                    </span>
                   )}
 
                   <button

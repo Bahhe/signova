@@ -177,12 +177,16 @@ export function ProductForm({
     }
 
     if (images.some((img) => img.isUploading)) {
-      setValidationError('Please wait for images to finish uploading before saving.')
+      setValidationError(
+        'Please wait for images to finish uploading before saving.',
+      )
       return false
     }
 
     if (images.some((img) => img.error)) {
-      setValidationError('One or more images failed to upload to storage. Please retry or remove them before saving.')
+      setValidationError(
+        'One or more images failed to upload to storage. Please retry or remove them before saving.',
+      )
       return false
     }
 

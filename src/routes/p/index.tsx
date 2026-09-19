@@ -47,7 +47,7 @@ export const Route = createFileRoute('/p/')({
 
 function PublicShowcasePage() {
   const { serverProducts, serverSettings } = Route.useLoaderData()
-  const { products: clientProducts } = useProducts()
+  const { products: clientProducts } = useProducts(serverProducts)
   const { data: session } = authClient.useSession()
   const user = session?.user as { role?: string } | undefined
   const isAdmin = user?.role === 'admin'
@@ -96,15 +96,25 @@ function PublicShowcasePage() {
         <header className="border-b border-border/60 bg-card/60 backdrop-blur-md sticky top-0 z-40">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                <Store className="size-5" />
-              </div>
+              {serverSettings?.logoUrl ? (
+                <img
+                  src={serverSettings.logoUrl}
+                  alt={serverSettings.storeName || 'Store Logo'}
+                  className="h-10 w-auto max-w-[150px] object-contain rounded-md"
+                />
+              ) : (
+                <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-xs">
+                  <Store className="size-5" />
+                </div>
+              )}
               <div>
                 <h1 className="text-base font-bold leading-none">
-                  معرض المنتجات
+                  {serverSettings?.storeName || 'معرض المنتجات'}
                 </h1>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  تصفح المنتجات الحصرية
+                  {serverSettings?.logoUrl
+                    ? 'معرض المنتجات الحصرية'
+                    : 'تصفح المنتجات الحصرية'}
                 </p>
               </div>
             </div>

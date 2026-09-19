@@ -20,7 +20,9 @@ function calculateTotal(priceStr?: string, quantity: number = 1): string {
   return priceStr
 }
 
-export async function processNewOrder(input: OrderInput): Promise<OrderSubmissionResult> {
+export async function processNewOrder(
+  input: OrderInput,
+): Promise<OrderSubmissionResult> {
   // Input validation
   const fullName = (input.fullName || '').trim()
   if (!fullName || fullName.length < 2) {

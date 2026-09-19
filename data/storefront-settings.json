@@ -8,16 +8,18 @@
   "location": "الجزائر العاصمة، الجزائر",
   "locationUrl": "https://maps.google.com",
   "workingHours": "خدمة الزبائن: 7/7 أيام من 09:00 إلى 20:00",
+  "metaPixelId": "",
+  "logoUrl": "http://localhost:8333/signovas3/1789818766525-mldn3w-android-chrome-512x512png.png",
+  "faviconUrl": "http://localhost:8333/signovas3/1789818626669-tycyi5-faviconico.ico",
   "socialLinks": {
     "tiktok": "https://tiktok.com",
     "twitter": "",
     "youtube": "",
     "facebook": "https://facebook.com",
     "linkedin": "",
-    "telegram": "https://t.me",
+    "telegram": "",
     "whatsapp": "+213555012345",
     "instagram": "https://instagram.com"
   },
-  "metaPixelId": "",
-  "updatedAt": "2026-09-18T13:27:05.101Z"
+  "updatedAt": "2026-09-19T11:52:57.216Z"
 }

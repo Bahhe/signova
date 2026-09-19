@@ -17,6 +17,7 @@ import {
 import { DashboardSidebar } from '#/components/dashboard-sidebar'
 import { DirectionProvider } from '#/components/direction-provider'
 import { getSessionServerFn } from '#/lib/server-auth'
+import { getProductsServerFn } from '#/lib/server-products'
 
 export const Route = createFileRoute('/')({
   beforeLoad: async () => {
@@ -38,14 +39,25 @@ export const Route = createFileRoute('/')({
       session,
     }
   },
+  loader: async () => {
+    try {
+      const products = await getProductsServerFn()
+      return { initialProducts: products }
+    } catch {
+      return { initialProducts: [] }
+    }
+  },
   component: AdminDashboard,
 })
 
 function AdminDashboard() {
   const navigate = useNavigate()
   const { session } = Route.useRouteContext()
-  const { products, saveProduct, deleteProduct } = useProducts()
-  const [editingProduct, setEditingProduct] = React.useState<Product | null>(null)
+  const { initialProducts } = Route.useLoaderData()
+  const { products, saveProduct, deleteProduct } = useProducts(initialProducts)
+  const [editingProduct, setEditingProduct] = React.useState<Product | null>(
+    null,
+  )
   const [search, setSearch] = React.useState('')
   const [selectedCategory, setSelectedCategory] = React.useState<string>('All')
   const formRef = React.useRef<HTMLDivElement>(null)
@@ -78,7 +90,8 @@ function AdminDashboard() {
 
       const matchCat =
         selectedCategory === 'All' ||
-        (p.category && p.category.toLowerCase() === selectedCategory.toLowerCase())
+        (p.category &&
+          p.category.toLowerCase() === selectedCategory.toLowerCase())
 
       return matchSearch && matchCat
     })
@@ -92,6 +105,7 @@ function AdminDashboard() {
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           onNewProduct={handleNew}
+          session={session}
         />
         <SidebarInset className="min-h-screen bg-background text-foreground transition-colors flex flex-col">
           {/* Inset Top Bar */}
@@ -99,9 +113,14 @@ function AdminDashboard() {
             <div className="flex items-center gap-2.5">
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-1 h-4" />
-              <span className="font-bold text-sm tracking-tight">Admin Dashboard</span>
+              <span className="font-bold text-sm tracking-tight">
+                Admin Dashboard
+              </span>
               <span className="text-xs text-muted-foreground hidden sm:inline">
-                • {session.user.name ? `${session.user.name}'s Studio` : 'Product Studio'}
+                •{' '}
+                {session.user.name
+                  ? `${session.user.name}'s Studio`
+                  : 'Product Studio'}
               </span>
             </div>
 
@@ -115,7 +134,11 @@ function AdminDashboard() {
                 <span className="hidden sm:inline">Showcase</span>
               </a>
               <ThemeToggle />
-              <Button size="xs" onClick={handleNew} className="gap-1 h-8 text-xs">
+              <Button
+                size="xs"
+                onClick={handleNew}
+                className="gap-1 h-8 text-xs"
+              >
                 <Plus className="size-3.5" />
                 <span>New</span>
               </Button>
@@ -131,7 +154,9 @@ function AdminDashboard() {
                 initialProduct={editingProduct}
                 existingProducts={products}
                 onSave={handleSave}
-                onCancel={editingProduct ? () => setEditingProduct(null) : undefined}
+                onCancel={
+                  editingProduct ? () => setEditingProduct(null) : undefined
+                }
               />
             </div>
 
@@ -141,7 +166,9 @@ function AdminDashboard() {
                 <div className="flex items-center gap-2">
                   <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                     <Package className="size-4 text-muted-foreground" />
-                    Products ({filtered.length}{selectedCategory !== 'All' ? ` of ${products.length}` : ''})
+                    Products ({filtered.length}
+                    {selectedCategory !== 'All' ? ` of ${products.length}` : ''}
+                    )
                   </h2>
                   {selectedCategory !== 'All' && (
                     <button

@@ -44,7 +44,7 @@ export const getUsersServerFn = createServerFn({ method: 'GET' }).handler(
       .orderBy(desc(user.createdAt))
 
     return users
-  }
+  },
 )
 
 export const setUserRoleServerFn = createServerFn({ method: 'POST' })

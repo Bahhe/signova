@@ -44,13 +44,10 @@ function saveToStorage(settings: StorefrontSettings): void {
 export function useStorefrontSettings(
   initialSettings?: StorefrontSettings | null,
 ) {
-  const [settings, setSettings] = React.useState<StorefrontSettings>(() => {
-    if (initialSettings) {
-      saveToStorage(initialSettings)
-      return initialSettings
-    }
-    return getInitialFromStorage()
-  })
+  // Always initialize deterministically between SSR and initial client hydration
+  const [settings, setSettings] = React.useState<StorefrontSettings>(
+    () => initialSettings ?? DEFAULT_STOREFRONT_SETTINGS,
+  )
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -69,7 +66,14 @@ export function useStorefrontSettings(
   }, [])
 
   React.useEffect(() => {
-    if (!initialSettings) {
+    if (initialSettings) {
+      setSettings(initialSettings)
+      saveToStorage(initialSettings)
+    } else {
+      const cached = getInitialFromStorage()
+      if (cached && cached !== DEFAULT_STOREFRONT_SETTINGS) {
+        setSettings(cached)
+      }
       void refresh()
     }
   }, [initialSettings, refresh])

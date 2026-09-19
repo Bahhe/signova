@@ -15,7 +15,9 @@ export const auth = betterAuth({
     '36d61fb63ddc9e0fd7b017cfaa264be5ad6c24533fd3e633cf1d0e65f3364f40',
   baseURL:
     process.env.BETTER_AUTH_URL ||
-    (process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:3000'),
+    (process.env.NODE_ENV === 'production'
+      ? undefined
+      : 'http://localhost:3000'),
   trustedOrigins: async (request) => {
     const origins = [
       'http://localhost:3000',
@@ -56,4 +58,3 @@ export const auth = betterAuth({
 })
 
 export type Session = typeof auth.$Infer.Session
-

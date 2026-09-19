@@ -13,6 +13,7 @@ import {
   ExternalLink,
   EyeOff,
   LayoutDashboard,
+  Store,
 } from 'lucide-react'
 import type { Product, ProductImage, StorefrontSettings } from '#/lib/types'
 import { authClient } from '#/lib/auth-client'
@@ -204,7 +205,28 @@ export function ProductPageView({
       {/* Header */}
       <div className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/p"
+              className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+              title="العودة إلى المعرض"
+            >
+              {settings?.logoUrl ? (
+                <img
+                  src={settings.logoUrl}
+                  alt={settings.storeName || 'Store Logo'}
+                  className="h-8 w-auto max-w-[120px] object-contain rounded-md"
+                />
+              ) : (
+                <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                  <Store className="size-4" />
+                </div>
+              )}
+              <span className="font-bold text-sm text-foreground hidden sm:inline-block">
+                {settings?.storeName || 'Signova'}
+              </span>
+            </Link>
+
             {isUserAdmin && (
               <Button
                 variant="outline"
@@ -214,7 +236,7 @@ export function ProductPageView({
               >
                 <Link to="/" title="الذهاب إلى لوحة التحكم">
                   <LayoutDashboard className="size-3.5 text-primary" />
-                  <span>لوحة التحكم</span>
+                  <span className="hidden md:inline">لوحة التحكم</span>
                 </Link>
               </Button>
             )}

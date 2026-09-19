@@ -15,10 +15,10 @@ import {
   Store,
   Share2,
   Eye,
-  Info,
   BarChart3,
-  Cloud,
 } from 'lucide-react'
+import { BrandAssetUploader } from '#/components/brand-asset-uploader'
+import { StorefrontFooter } from '#/components/storefront-footer'
 import { getSessionServerFn } from '#/lib/server-auth'
 import { getProductsServerFn } from '#/lib/server-products'
 import {
@@ -27,6 +27,7 @@ import {
 } from '#/lib/server-settings'
 import type { StorefrontSettings, StorefrontSocialLinks } from '#/lib/types'
 import { DEFAULT_STOREFRONT_SETTINGS } from '#/lib/types'
+import { isValidPixelId } from '#/lib/meta-pixel'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -41,21 +42,23 @@ import {
 } from '#/components/ui/sidebar'
 import { DashboardSidebar } from '#/components/dashboard-sidebar'
 import { DirectionProvider } from '#/components/direction-provider'
-import { StorefrontFooter } from '#/components/storefront-footer'
 
 export const Route = createFileRoute('/settings')({
   beforeLoad: async () => {
     const session = await getSessionServerFn()
     if (!session) {
       throw redirect({
-        to: '/p',
+        to: '/login',
+        search: {
+          redirect: '/settings',
+        },
       })
     }
 
     const role = (session.user as { role?: string }).role || 'user'
     if (role !== 'admin') {
       throw redirect({
-        to: '/p',
+        to: '/unauthorized',
       })
     }
 
@@ -81,24 +84,27 @@ export const Route = createFileRoute('/settings')({
   },
   head: () => ({
     meta: [
-      { title: 'Storefront & Footer Settings | SignovaPub' },
+      { title: 'Settings | SignovaPub' },
       {
         name: 'description',
         content:
-          'Customize contact information, social media links, and store location displayed in the storefront footer.',
+          'Configure store settings, contact information, social media links, Meta Pixel tracking, and media storage.',
       },
     ],
   }),
-  component: StorefrontSettingsPage,
+  component: SettingsPage,
 })
 
-function StorefrontSettingsPage() {
+function SettingsPage() {
+  const { session } = Route.useRouteContext()
   const { initialSettings, products } = Route.useLoaderData()
 
   const [formData, setFormData] = React.useState<StorefrontSettings>(() => ({
     ...DEFAULT_STOREFRONT_SETTINGS,
     ...initialSettings,
-    metaPixelId: initialSettings?.metaPixelId || '',
+    metaPixelId: initialSettings.metaPixelId || '',
+    logoUrl: initialSettings.logoUrl || '',
+    faviconUrl: initialSettings.faviconUrl || '',
     socialLinks: {
       ...DEFAULT_STOREFRONT_SETTINGS.socialLinks,
       ...initialSettings.socialLinks,
@@ -111,31 +117,6 @@ function StorefrontSettingsPage() {
     text: string
   } | null>(null)
   const [showLivePreview, setShowLivePreview] = React.useState(true)
-  const [storageStatus, setStorageStatus] = React.useState<{
-    loading: boolean
-    result: {
-      ok: boolean
-      endpoint?: string
-      bucket?: string
-      latencyMs?: number
-      isConfigured?: boolean
-      error?: string
-    } | null
-  }>({ loading: false, result: null })
-
-  const handleTestStorage = async () => {
-    setStorageStatus({ loading: true, result: null })
-    try {
-      const res = await fetch('/api/storage/status')
-      const json = await res.json()
-      setStorageStatus({ loading: false, result: json })
-    } catch (err: any) {
-      setStorageStatus({
-        loading: false,
-        result: { ok: false, error: err.message || 'Connection failed' },
-      })
-    }
-  }
 
   const handleFieldChange = (
     field: keyof StorefrontSettings,
@@ -170,7 +151,7 @@ function StorefrontSettingsPage() {
       setFormData(saved)
       setStatusMessage({
         type: 'success',
-        text: 'Storefront and footer settings saved successfully! Changes are immediately reflected across the storefront.',
+        text: 'Settings saved successfully! Changes are immediately reflected across the storefront.',
       })
       setTimeout(() => setStatusMessage(null), 6000)
     } catch (err: any) {
@@ -197,18 +178,21 @@ function StorefrontSettingsPage() {
   return (
     <DirectionProvider dir="ltr">
       <SidebarProvider>
-        <DashboardSidebar products={products} currentRoute="settings" />
+        <DashboardSidebar
+          products={products}
+          currentRoute="settings"
+          session={session}
+          settings={formData}
+        />
         <SidebarInset className="min-h-screen bg-background text-foreground transition-colors flex flex-col">
           {/* Inset Top Bar */}
           <header className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-30 h-14 flex items-center justify-between px-4">
             <div className="flex items-center gap-2.5">
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-1 h-4" />
-              <span className="font-bold text-sm tracking-tight">
-                Storefront Settings
-              </span>
+              <span className="font-bold text-sm tracking-tight">Settings</span>
               <span className="text-xs text-muted-foreground hidden sm:inline">
-                • Contact, Footer & Social Links
+                • Storefront, Meta Pixel & Media
               </span>
             </div>
 
@@ -248,12 +232,12 @@ function StorefrontSettingsPage() {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
                   <Settings className="size-6 text-primary" />
-                  <span>Storefront & Footer Settings</span>
+                  <span>Settings</span>
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Configure contact numbers, email, social media links, and
-                  store location displayed in the storefront footer and product
-                  pages.
+                  Configure storefront details, footer information, contact
+                  numbers, social media links, Meta Pixel tracking, and media
+                  storage.
                 </p>
               </div>
 
@@ -675,24 +659,24 @@ function StorefrontSettingsPage() {
                 </div>
               </Card>
 
-              {/* Card 4: Storefront Branding in Footer */}
-              <Card className="p-5 sm:p-6 border-border/80 shadow-xs space-y-5">
+              {/* Card 4: Store Brand Identity, Logo & Favicon */}
+              <Card className="p-5 sm:p-6 border-border/80 shadow-xs space-y-6">
                 <div className="flex items-center gap-2.5 border-b border-border/60 pb-3">
                   <div className="size-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
                     <Store className="size-4" />
                   </div>
                   <div>
                     <h2 className="font-bold text-base">
-                      Store Branding & Footer Bio
+                      Store Branding & Visual Identity
                     </h2>
                     <p className="text-xs text-muted-foreground">
-                      Store name and brief description displayed in the footer
-                      below the brand logo.
+                      Configure your store name, logo (displayed across headers, footer, and sidebar),
+                      favicon for browser tabs, and store bio.
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="space-y-1.5">
                     <Label
                       htmlFor="storeName"
@@ -709,9 +693,34 @@ function StorefrontSettingsPage() {
                       placeholder="Signova"
                       className="text-xs"
                     />
+                    <p className="text-[11px] text-muted-foreground">
+                      Your business or store title used in SEO titles, headings, and branding.
+                    </p>
                   </div>
 
-                  <div className="space-y-1.5">
+                  {/* Store Logo Uploader */}
+                  <BrandAssetUploader
+                    type="logo"
+                    label="Store Logo"
+                    description="The main brand logo displayed across your storefront header, product pages, footer, and admin sidebar."
+                    value={formData.logoUrl || ''}
+                    onChange={(url) => handleFieldChange('logoUrl', url)}
+                    storeName={formData.storeName || 'Signova'}
+                    recommendation="Recommended: Transparent PNG or SVG (approx. 200×50px or 4:1 to 1:1 aspect ratio). Readable in both light and dark themes."
+                  />
+
+                  {/* Favicon Uploader */}
+                  <BrandAssetUploader
+                    type="favicon"
+                    label="Store Favicon (Browser Icon)"
+                    description="The icon displayed on browser tabs, bookmarks, URL bars, and mobile home screen shortcuts."
+                    value={formData.faviconUrl || ''}
+                    onChange={(url) => handleFieldChange('faviconUrl', url)}
+                    storeName={formData.storeName || 'Signova'}
+                    recommendation="Recommended: Square 32×32, 48×48, or 64×64 px in ICO, PNG, or SVG format."
+                  />
+
+                  <div className="space-y-1.5 pt-1">
                     <Label
                       htmlFor="storeDescription"
                       className="text-xs font-semibold"
@@ -748,162 +757,64 @@ function StorefrontSettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <a
-                    href="/pixel"
-                    className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
-                  >
-                    <span>Dedicated Pixel Page</span>
-                    <ExternalLink className="size-3" />
-                  </a>
+                  <div>
+                    {formData.metaPixelId?.trim() ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Pixel Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                        Not Configured
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label
                     htmlFor="metaPixelId"
                     className="text-xs font-semibold flex items-center gap-1.5"
                   >
                     <span>Meta Pixel ID (Dataset ID)</span>
                   </Label>
-                  <Input
-                    id="metaPixelId"
-                    value={formData.metaPixelId || ''}
-                    onChange={(e) =>
-                      handleFieldChange('metaPixelId', e.target.value)
-                    }
-                    placeholder="e.g. 1234567890123456"
-                    className="font-mono text-xs"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Your 15-16 digit Meta Pixel ID.
-                  </p>
-                </div>
-              </Card>
-
-              {/* Card 6: Storage & Media Bucket (SeaweedFS / S3) */}
-              <Card className="p-5 sm:p-6 border-border/80 shadow-xs space-y-5">
-                <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
-                      <Cloud className="size-4" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-base">
-                        Storage & Media Bucket (SeaweedFS / S3)
-                      </h2>
-                      <p className="text-xs text-muted-foreground">
-                        Images uploaded for products are stored in an S3-compatible object storage bucket.
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="xs"
-                    onClick={handleTestStorage}
-                    disabled={storageStatus.loading}
-                    className="gap-1.5 text-xs h-7"
-                  >
-                    {storageStatus.loading ? (
-                      <RotateCw className="size-3 animate-spin" />
-                    ) : (
-                      <Cloud className="size-3" />
-                    )}
-                    <span>{storageStatus.loading ? 'Testing...' : 'Test Connection'}</span>
-                  </Button>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    By default, the server connects via environment variables:{' '}
-                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_S3_ENDPOINT</code>,{' '}
-                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_ACCESS_KEY</code>,{' '}
-                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_SECRET_KEY</code>, and{' '}
-                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono">SEAWEEDFS_BUCKET</code>.
-                  </p>
-
-                  {storageStatus.result && (
-                    <div
-                      className={`p-3.5 rounded-xl border text-xs space-y-2 animate-in fade-in ${
-                        storageStatus.result.ok
-                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
-                          : 'bg-destructive/10 border-destructive/20 text-destructive'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 font-semibold">
-                        {storageStatus.result.ok ? (
-                          <>
-                            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-                            <span>Storage Bucket Connected Successfully!</span>
-                            {storageStatus.result.latencyMs !== undefined && (
-                              <span className="font-mono text-[10px] opacity-80">
-                                ({storageStatus.result.latencyMs}ms)
-                              </span>
-                            )}
-                          </>
+                  <div className="relative">
+                    <Input
+                      id="metaPixelId"
+                      value={formData.metaPixelId || ''}
+                      onChange={(e) =>
+                        handleFieldChange('metaPixelId', e.target.value)
+                      }
+                      placeholder="e.g. 1234567890123456"
+                      className="font-mono text-xs pr-9"
+                    />
+                    {formData.metaPixelId?.trim() && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        {isValidPixelId(formData.metaPixelId) ? (
+                          <CheckCircle2 className="size-4 text-emerald-500" />
                         ) : (
-                          <>
-                            <AlertCircle className="size-4 text-destructive" />
-                            <span>Storage Connection Failed</span>
-                          </>
+                          <AlertCircle className="size-4 text-amber-500" />
                         )}
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-                        <div>
-                          <span className="font-semibold opacity-70">Endpoint: </span>
-                          <span className="font-mono">{storageStatus.result.endpoint || 'Not set'}</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold opacity-70">Bucket: </span>
-                          <span className="font-mono">{storageStatus.result.bucket || 'signovas3'}</span>
-                        </div>
-                      </div>
-
-                      {storageStatus.result.error && (
-                        <div className="p-2 rounded bg-background/50 text-[11px] font-mono leading-relaxed mt-2 border border-destructive/20">
-                          {storageStatus.result.error}
-                        </div>
-                      )}
-
-                      {!storageStatus.result.ok && (
-                        <p className="text-[11px] opacity-90 pt-1">
-                          Tip: In Coolify or Docker, ensure the app container can reach SeaweedFS. Set{' '}
-                          <code className="font-mono bg-background/60 px-1 py-0.5 rounded">
-                            SEAWEEDFS_S3_ENDPOINT=http://&lt;service-name&gt;:8333
-                          </code>{' '}
-                          in your environment variables.
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Base64 Images in Database Warning */}
-                  {products.flatMap((p) => p.images || []).some((img) => img.url?.startsWith('data:image/')) && (
-                    <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200 text-xs flex items-start gap-2">
-                      <AlertCircle className="size-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="font-semibold">Base64 Images Detected in Database</p>
-                        <p className="text-[11px] opacity-90 leading-relaxed">
-                          One or more products currently have images stored as inline base64 strings instead of S3 bucket URLs.
-                          Once your S3 storage is connected, simply opening each product and clicking &quot;Update&quot; will automatically upload and migrate those images into your bucket!
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  {formData.metaPixelId?.trim() &&
+                    !isValidPixelId(formData.metaPixelId) && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Notice: Meta Pixel IDs usually consist of 12 to 18
+                        digits without spaces or letters.
+                      </p>
+                    )}
+                  <p className="text-[11px] text-muted-foreground">
+                    Your 15-16 digit Meta Pixel ID. When set, PageView,
+                    ViewContent, and Purchase events are automatically tracked
+                    across storefront pages.
+                  </p>
                 </div>
               </Card>
 
               {/* Bottom Action Bar */}
               <div className="flex items-center justify-between gap-4 pt-2">
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Info className="size-3.5 text-primary" />
-                  <span>
-                    The footer is displayed on customer storefront pages
-                    (showcase and product pages) in RTL.
-                  </span>
-                </p>
-
                 <Button
                   type="submit"
                   disabled={isSaving}
@@ -918,6 +829,26 @@ function StorefrontSettingsPage() {
                 </Button>
               </div>
             </form>
+
+            {/* Live Storefront Footer Preview */}
+            {showLivePreview && (
+              <div className="space-y-3 pt-6 border-t border-border/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex items-center gap-2">
+                    <Eye className="size-4 text-primary" />
+                    <h3 className="text-sm font-bold">
+                      Live Storefront Footer & Brand Preview
+                    </h3>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Updates in real time as you adjust your store logo, name, contacts, and links
+                  </span>
+                </div>
+                <div className="rounded-2xl border border-border/80 overflow-hidden shadow-sm bg-card/60 backdrop-blur-sm">
+                  <StorefrontFooter settings={formData} />
+                </div>
+              </div>
+            )}
           </main>
         </SidebarInset>
       </SidebarProvider>

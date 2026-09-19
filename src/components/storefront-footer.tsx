@@ -214,9 +214,17 @@ export function StorefrontFooter({
           {/* Brand & About (5 cols) */}
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-xs">
-                <Store className="size-5" />
-              </div>
+              {settings.logoUrl ? (
+                <img
+                  src={settings.logoUrl}
+                  alt={settings.storeName || 'Store Logo'}
+                  className="h-10 w-auto max-w-[160px] object-contain rounded-md"
+                />
+              ) : (
+                <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-xs">
+                  <Store className="size-5" />
+                </div>
+              )}
               <span className="font-extrabold text-xl tracking-tight">
                 {settings.storeName || 'SignovaPub'}
               </span>

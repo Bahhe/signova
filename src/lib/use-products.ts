@@ -29,8 +29,11 @@ function saveToStorage(products: Product[]): void {
   }
 }
 
-export function useProducts() {
-  const [products, setProducts] = React.useState<Product[]>(getInitialFromStorage)
+export function useProducts(initialProducts?: Product[]) {
+  // Always initialize state deterministically between SSR and initial client hydration
+  const [products, setProducts] = React.useState<Product[]>(
+    () => initialProducts ?? INITIAL_PRODUCTS,
+  )
   const [loading, setLoading] = React.useState(false)
 
   const refresh = React.useCallback(async () => {
@@ -51,76 +54,99 @@ export function useProducts() {
     }
   }, [])
 
+  // Sync state if initialProducts changes
   React.useEffect(() => {
+    if (initialProducts) {
+      setProducts(initialProducts)
+    }
+  }, [initialProducts])
+
+  // On client mount (post-hydration), load cached localStorage products if no initialProducts, then refresh
+  React.useEffect(() => {
+    if (!initialProducts || initialProducts.length === 0) {
+      const cached = getInitialFromStorage()
+      if (cached && cached !== INITIAL_PRODUCTS && cached.length > 0) {
+        setProducts(cached)
+      }
+    }
     void refresh()
-  }, [refresh])
+  }, [initialProducts, refresh])
 
-  const saveProduct = React.useCallback(async (product: Product): Promise<Product> => {
-    const now = new Date().toISOString()
-    const updated: Product = {
-      ...product,
-      updatedAt: now,
-      createdAt: product.createdAt || now,
-    }
-
-    // Optimistic update
-    setProducts((prev) => {
-      const idx = prev.findIndex((p) => p.id === product.id || p.slug === product.slug)
-      let next: Product[]
-      if (idx >= 0) {
-        next = [...prev]
-        next[idx] = updated
-      } else {
-        next = [updated, ...prev]
+  const saveProduct = React.useCallback(
+    async (product: Product): Promise<Product> => {
+      const now = new Date().toISOString()
+      const updated: Product = {
+        ...product,
+        updatedAt: now,
+        createdAt: product.createdAt || now,
       }
-      saveToStorage(next)
-      return next
-    })
 
-    try {
-      const res = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(product),
+      // Optimistic update
+      setProducts((prev) => {
+        const idx = prev.findIndex(
+          (p) => p.id === product.id || p.slug === product.slug,
+        )
+        let next: Product[]
+        if (idx >= 0) {
+          next = [...prev]
+          next[idx] = updated
+        } else {
+          next = [updated, ...prev]
+        }
+        saveToStorage(next)
+        return next
       })
-      if (res.ok) {
-        const saved = (await res.json()) as Product
-        setProducts((prev) => {
-          const next = prev.map((p) => (p.id === saved.id ? saved : p))
-          saveToStorage(next)
-          return next
+
+      try {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(product),
         })
-        return saved
+        if (res.ok) {
+          const saved = (await res.json()) as Product
+          setProducts((prev) => {
+            const next = prev.map((p) => (p.id === saved.id ? saved : p))
+            saveToStorage(next)
+            return next
+          })
+          return saved
+        }
+      } catch (err) {
+        console.warn('API save failed, using local optimistic copy:', err)
       }
-    } catch (err) {
-      console.warn('API save failed, using local optimistic copy:', err)
-    }
-    return updated
-  }, [])
+      return updated
+    },
+    [],
+  )
 
-  const deleteProduct = React.useCallback(async (id: string): Promise<boolean> => {
-    setProducts((prev) => {
-      const next = prev.filter((p) => p.id !== id)
-      saveToStorage(next)
-      return next
-    })
+  const deleteProduct = React.useCallback(
+    async (id: string): Promise<boolean> => {
+      setProducts((prev) => {
+        const next = prev.filter((p) => p.id !== id)
+        saveToStorage(next)
+        return next
+      })
 
-    try {
-      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
-      return res.ok
-    } catch (err) {
-      console.warn('API delete failed, using local state:', err)
-      return true
-    }
-  }, [])
+      try {
+        const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
+        return res.ok
+      } catch (err) {
+        console.warn('API delete failed, using local state:', err)
+        return true
+      }
+    },
+    [],
+  )
 
   const getProduct = React.useCallback(
     (slugOrId: string): Product | undefined => {
       return products.find(
-        (p) => p.id === slugOrId || p.slug.toLowerCase() === slugOrId.toLowerCase()
+        (p) =>
+          p.id === slugOrId || p.slug.toLowerCase() === slugOrId.toLowerCase(),
       )
     },
-    [products]
+    [products],
   )
 
   return {

@@ -49,21 +49,15 @@ export const Route = createFileRoute('/thank-you')({
     productId:
       typeof search.productId === 'string' ? search.productId : undefined,
     productTitle:
-      typeof search.productTitle === 'string'
-        ? search.productTitle
-        : undefined,
+      typeof search.productTitle === 'string' ? search.productTitle : undefined,
     price: typeof search.price === 'string' ? search.price : undefined,
     quantity: search.quantity ? Number(search.quantity) : 1,
     total: typeof search.total === 'string' ? search.total : undefined,
     value: search.value ? Number(search.value) : undefined,
-    currency:
-      typeof search.currency === 'string' ? search.currency : 'DZD',
+    currency: typeof search.currency === 'string' ? search.currency : 'DZD',
     deliveryType:
-      typeof search.deliveryType === 'string'
-        ? search.deliveryType
-        : undefined,
-    fullName:
-      typeof search.fullName === 'string' ? search.fullName : undefined,
+      typeof search.deliveryType === 'string' ? search.deliveryType : undefined,
+    fullName: typeof search.fullName === 'string' ? search.fullName : undefined,
     phone: typeof search.phone === 'string' ? search.phone : undefined,
     wilaya: typeof search.wilaya === 'string' ? search.wilaya : undefined,
     commune: typeof search.commune === 'string' ? search.commune : undefined,
@@ -189,10 +183,18 @@ function ThankYouPageRoute() {
         {/* Top Minimal Navigation */}
         <header className="border-b border-border/60 bg-card/70 backdrop-blur-md sticky top-0 z-30">
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs">
-                S
-              </div>
+            <div className="flex items-center gap-2.5">
+              {serverSettings?.logoUrl ? (
+                <img
+                  src={serverSettings.logoUrl}
+                  alt={serverSettings.storeName || 'Store Logo'}
+                  className="h-8 w-auto max-w-[120px] object-contain rounded-md"
+                />
+              ) : (
+                <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs">
+                  {serverSettings?.storeName ? serverSettings.storeName.charAt(0).toUpperCase() : 'S'}
+                </div>
+              )}
               <span className="font-bold text-sm tracking-tight">
                 {serverSettings?.storeName || 'SignovaPub'}
               </span>
@@ -236,7 +238,8 @@ function ThankYouPageRoute() {
                   شكراً لثقتكم بنا!
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-                  لقد تم تسجيل طلبكم في نظامنا بنجاح. سيتصل بكم فريق خدمة العملاء قريباً عبر الهاتف لتأكيد العنوان وموعد التوصيل.
+                  لقد تم تسجيل طلبكم في نظامنا بنجاح. سيتصل بكم فريق خدمة
+                  العملاء قريباً عبر الهاتف لتأكيد العنوان وموعد التوصيل.
                 </p>
               </div>
             </div>
@@ -286,7 +289,10 @@ function ThankYouPageRoute() {
                       {productTitle}
                     </h3>
                     <div className="flex items-center gap-2 pt-0.5">
-                      <Badge variant="secondary" className="text-xs font-medium">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs font-medium"
+                      >
                         الكمية: {quantity}
                       </Badge>
                       {search.price && (
@@ -311,7 +317,9 @@ function ThankYouPageRoute() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
                   {search.fullName && (
                     <div className="space-y-1 bg-muted/20 p-3 rounded-xl border border-border/40">
-                      <span className="text-muted-foreground">الاسم الكامل</span>
+                      <span className="text-muted-foreground">
+                        الاسم الكامل
+                      </span>
                       <p className="font-semibold text-foreground text-sm">
                         {search.fullName}
                       </p>
@@ -321,7 +329,10 @@ function ThankYouPageRoute() {
                   {search.phone && (
                     <div className="space-y-1 bg-muted/20 p-3 rounded-xl border border-border/40">
                       <span className="text-muted-foreground">رقم الهاتف</span>
-                      <p className="font-semibold text-foreground font-mono text-sm" dir="ltr">
+                      <p
+                        className="font-semibold text-foreground font-mono text-sm"
+                        dir="ltr"
+                      >
                         {search.phone}
                       </p>
                     </div>
@@ -345,11 +356,14 @@ function ThankYouPageRoute() {
 
                   {(search.wilaya || search.commune) && (
                     <div className="sm:col-span-2 space-y-1 bg-muted/20 p-3 rounded-xl border border-border/40">
-                      <span className="text-muted-foreground">عنوان التوصيل</span>
+                      <span className="text-muted-foreground">
+                        عنوان التوصيل
+                      </span>
                       <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
                         <MapPin className="size-3.5 text-primary shrink-0" />
                         <span>
-                          {search.wilaya} {search.commune ? `- ${search.commune}` : ''}
+                          {search.wilaya}{' '}
+                          {search.commune ? `- ${search.commune}` : ''}
                         </span>
                       </p>
                     </div>
@@ -398,7 +412,8 @@ function ThankYouPageRoute() {
                     الاستلام والدفع
                   </h4>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    يصلكم الطرد إلى باب داركم مع إمكانية المعاينة والدفع نقداً عند الاستلام.
+                    يصلكم الطرد إلى باب داركم مع إمكانية المعاينة والدفع نقداً
+                    عند الاستلام.
                   </p>
                 </div>
               </div>
