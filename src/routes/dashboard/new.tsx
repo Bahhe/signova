@@ -5,6 +5,7 @@ import type { Product } from '#/lib/types'
 import { useProducts } from '#/lib/use-products'
 import { ProductForm } from '#/components/product-form'
 import { ThemeToggle } from '#/components/theme-toggle'
+import { toast } from '#/components/ui/sonner'
 import { Button } from '#/components/ui/button'
 import { Separator } from '#/components/ui/separator'
 import {
@@ -59,12 +60,21 @@ function NewProductPage() {
   }, [editId, products])
 
   const handleSave = async (product: Product, andView = false) => {
-    await saveProduct(product)
-    if (andView) {
-      const productUrl = getShopUrl(`/${product.slug}`)
-      window.open(productUrl, '_blank')
+    try {
+      await saveProduct(product)
+      toast.success(
+        editingProduct
+          ? `Product "${product.title}" updated successfully!`
+          : `Product "${product.title}" created successfully!`,
+      )
+      if (andView) {
+        const productUrl = getShopUrl(`/${product.slug}`)
+        window.open(productUrl, '_blank')
+      }
+      void navigate({ to: '/dashboard' })
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save product.')
     }
-    void navigate({ to: '/dashboard' })
   }
 
   const handleCancel = () => {

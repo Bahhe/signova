@@ -35,7 +35,19 @@ import {
 import { WILAYAS } from '#/lib/algeria-locations'
 import { isValidPixelId } from '#/lib/meta-pixel'
 import { ThemeToggle } from '#/components/theme-toggle'
+import { toast } from '#/components/ui/sonner'
 import { Button } from '#/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '#/components/ui/alert-dialog'
 import { Input } from '#/components/ui/input'
 import { Textarea } from '#/components/ui/textarea'
 import { Label } from '#/components/ui/label'
@@ -239,22 +251,18 @@ function SettingsPage() {
         },
       }
     })
+    toast.info(`Wilaya ${wilayaCode} delivery rates reset to default.`)
   }
 
-  const handleResetAllWilayas = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to reset all custom wilaya overrides to defaults?',
-      )
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        deliveryRates: {
-          ...(prev.deliveryRates || DEFAULT_DELIVERY_RATES),
-          wilayas: {},
-        },
-      }))
-    }
+  const confirmResetAllWilayas = () => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryRates: {
+        ...(prev.deliveryRates || DEFAULT_DELIVERY_RATES),
+        wilayas: {},
+      },
+    }))
+    toast.info('All custom wilaya overrides have been reset to defaults.')
   }
 
   const customCount = React.useMemo(() => {
@@ -290,26 +298,24 @@ function SettingsPage() {
         type: 'success',
         text: 'Settings saved successfully! Changes are immediately reflected across the storefront.',
       })
+      toast.success('Settings saved successfully!')
       setTimeout(() => setStatusMessage(null), 6000)
     } catch (err: any) {
       console.error('Failed to save storefront settings:', err)
+      const errText = err?.message || 'Failed to save settings. Please try again.'
       setStatusMessage({
         type: 'error',
-        text: err?.message || 'Failed to save settings. Please try again.',
+        text: errText,
       })
+      toast.error(errText)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleResetToDefaults = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to restore all settings to their default values?',
-      )
-    ) {
-      setFormData(DEFAULT_STOREFRONT_SETTINGS)
-    }
+  const confirmResetToDefaults = () => {
+    setFormData(DEFAULT_STOREFRONT_SETTINGS)
+    toast.info('Storefront settings have been restored to default values.')
   }
 
   return (
@@ -379,15 +385,39 @@ function SettingsPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                  onClick={handleResetToDefaults}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Reset to Defaults
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Reset to Defaults
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Restore default storefront settings?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to restore all settings to their
+                        default values? Any unsaved edits will be replaced with
+                        factory defaults.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={confirmResetToDefaults}
+                      >
+                        Restore Defaults
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
 
@@ -630,17 +660,41 @@ function SettingsPage() {
                         {customCount} Wilaya{customCount > 1 ? 's' : ''}{' '}
                         Customized
                       </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xs"
-                        onClick={handleResetAllWilayas}
-                        className="text-[11px] text-muted-foreground hover:text-destructive gap-1"
-                        title="Reset all overrides to defaults"
-                      >
-                        <RotateCcw className="size-3" />
-                        <span>Reset All</span>
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            className="text-[11px] text-muted-foreground hover:text-destructive gap-1"
+                            title="Reset all overrides to defaults"
+                          >
+                            <RotateCcw className="size-3" />
+                            <span>Reset All</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Reset all wilaya delivery rates?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to reset all {customCount}{' '}
+                              customized wilaya delivery overrides back to their
+                              default rates?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              variant="destructive"
+                              onClick={confirmResetAllWilayas}
+                            >
+                              Reset All Overrides
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   )}
                 </div>

@@ -5,6 +5,7 @@ import type { Product } from '#/lib/types'
 import { useProducts } from '#/lib/use-products'
 import { ProductCard } from '#/components/product-card'
 import { ThemeToggle } from '#/components/theme-toggle'
+import { toast } from '#/components/ui/sonner'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
 import { Separator } from '#/components/ui/separator'
@@ -56,6 +57,19 @@ function AdminDashboard() {
 
   const handleNew = () => {
     void navigate({ to: '/dashboard/new' })
+  }
+
+  const handleDeleteProduct = async (product: Product) => {
+    try {
+      const ok = await deleteProduct(product.id)
+      if (ok !== false) {
+        toast.success(`Product "${product.title}" has been deleted.`)
+      } else {
+        toast.error(`Failed to delete "${product.title}".`)
+      }
+    } catch (err: any) {
+      toast.error(err?.message || `Failed to delete "${product.title}".`)
+    }
   }
 
   const filtered = React.useMemo(() => {
@@ -203,7 +217,7 @@ function AdminDashboard() {
                       key={product.id}
                       product={product}
                       onEdit={handleEdit}
-                      onDelete={(id) => void deleteProduct(id)}
+                      onDelete={() => void handleDeleteProduct(product)}
                     />
                   ))}
                 </div>

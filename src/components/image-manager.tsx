@@ -16,6 +16,18 @@ import {
 import type { ProductImage } from '#/lib/types'
 import { optimizeImageFile } from '#/lib/image-helpers'
 import { Button } from './ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog'
+import { toast } from './ui/sonner'
 import { Badge } from './ui/badge'
 import { Label } from './ui/label'
 
@@ -290,6 +302,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
     const [moved] = updated.splice(index, 1)
     updated.unshift(moved)
     onChange(updated)
+    toast.success('Cover image updated.')
   }
 
   // Delete image
@@ -300,6 +313,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
     }
     const updated = images.filter((_, i) => i !== index)
     onChange(updated)
+    toast.info('Image removed.')
   }
 
   const isAnyUploading = images.some((img) => img.isUploading)
@@ -322,18 +336,40 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
           )}
         </div>
         {images.length > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => {
-              fileMapRef.current.clear()
-              onChange([])
-            }}
-            className="text-xs text-destructive hover:bg-destructive/10 h-7"
-          >
-            Clear All
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                className="text-xs text-destructive hover:bg-destructive/10 h-7"
+              >
+                Clear All
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear all images?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to remove all {images.length} images from
+                  this product? You will need to upload or select them again.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={() => {
+                    fileMapRef.current.clear()
+                    onChange([])
+                    toast.info('All images have been removed.')
+                  }}
+                >
+                  Clear All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
 

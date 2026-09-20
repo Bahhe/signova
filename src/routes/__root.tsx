@@ -3,6 +3,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { TooltipProvider } from '#/components/ui/tooltip'
+import { Toaster } from '#/components/ui/sonner'
 import { NotFound } from '#/components/not-found'
 import { getStorefrontSettingsServerFn } from '#/lib/server-settings'
 import { useStorefrontSettings } from '#/lib/use-storefront-settings'
@@ -88,6 +89,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <TooltipProvider>{children}</TooltipProvider>
+        <Toaster richColors position="top-right" closeButton />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

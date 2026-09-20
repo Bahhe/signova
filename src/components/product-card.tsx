@@ -8,6 +8,17 @@ import {
 } from 'lucide-react'
 import type { Product, ProductImage } from '#/lib/types'
 import { Button } from './ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog'
 import { getShopUrl } from '#/lib/domain'
 
 interface ProductCardProps {
@@ -120,20 +131,41 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
           <ExternalLink className="size-3" />
         </a>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          onClick={() => {
-            if (confirm(`Delete "${product.title}"?`)) {
-              onDelete(product.id)
-            }
-          }}
-          className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          title="Delete"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              title="Delete"
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete{' '}
+                <span className="font-semibold text-foreground">
+                  "{product.title}"
+                </span>
+                ? This action cannot be undone and will permanently remove this
+                product and its checkout showcase.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => onDelete(product.id)}
+              >
+                Delete Product
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )

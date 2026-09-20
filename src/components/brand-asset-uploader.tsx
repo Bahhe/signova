@@ -10,6 +10,7 @@ import {
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Badge } from './ui/badge'
+import { toast } from './ui/sonner'
 import { optimizeImageFile, fileToDataUrl } from '#/lib/image-helpers'
 
 interface BrandAssetUploaderProps {
@@ -111,9 +112,12 @@ export function BrandAssetUploader({
       const finalUrl = uploadedUrl || base64Data
       onChange(finalUrl)
       setDirectUrl(finalUrl)
+      toast.success(`${type === 'logo' ? 'Logo' : 'Favicon'} updated successfully.`)
     } catch (err: any) {
       console.error('Failed to process asset file:', err)
-      setUploadError(err?.message || 'Failed to process image file')
+      const errText = err?.message || 'Failed to process image file'
+      setUploadError(errText)
+      toast.error(errText)
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {
@@ -155,12 +159,16 @@ export function BrandAssetUploader({
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+    toast.info(`${type === 'logo' ? 'Store logo' : 'Favicon'} removed.`)
   }
 
   const handleApplyUrl = (e: React.FormEvent) => {
     e.preventDefault()
     if (directUrl.trim()) {
       onChange(directUrl.trim())
+      toast.success(
+        `${type === 'logo' ? 'Logo' : 'Favicon'} URL applied successfully.`,
+      )
     }
   }
 

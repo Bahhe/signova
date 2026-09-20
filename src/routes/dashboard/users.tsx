@@ -23,7 +23,19 @@ import {
 import type { UserRecord } from '#/lib/server-users'
 import { useProducts } from '#/lib/use-products'
 import { ThemeToggle } from '#/components/theme-toggle'
+import { toast } from '#/components/ui/sonner'
 import { Button } from '#/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '#/components/ui/alert-dialog'
 import { Input } from '#/components/ui/input'
 import { Badge } from '#/components/ui/badge'
 import { Separator } from '#/components/ui/separator'
@@ -95,9 +107,6 @@ function UsersManagementPage() {
     'all',
   )
   const [loadingUserId, setLoadingUserId] = React.useState<string | null>(null)
-  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(
-    null,
-  )
   const [statusFeedback, setStatusFeedback] = React.useState<{
     type: 'success' | 'error'
     message: string
@@ -133,10 +142,12 @@ function UsersManagementPage() {
       currentRole === 'admin' ? 'user' : 'admin'
 
     if (userId === session.user.id && targetRole === 'user') {
+      const msg = 'Safety rule: You cannot demote yourself from the admin role.'
       setStatusFeedback({
         type: 'error',
-        message: 'Safety rule: You cannot demote yourself from the admin role.',
+        message: msg,
       })
+      toast.error(msg)
       return
     }
 
@@ -156,22 +167,26 @@ function UsersManagementPage() {
         prev.map((u) => (u.id === userId ? { ...u, role: targetRole } : u)),
       )
 
+      const successMsg = `Successfully ${
+        targetRole === 'admin'
+          ? 'granted admin privileges to'
+          : 'revoked admin privileges from'
+      } user.`
       setStatusFeedback({
         type: 'success',
-        message: `Successfully ${
-          targetRole === 'admin'
-            ? 'granted admin privileges to'
-            : 'revoked admin privileges from'
-        } user.`,
+        message: successMsg,
       })
+      toast.success(successMsg)
 
       await router.invalidate()
     } catch (err: any) {
+      const errMsg =
+        err?.message || 'Failed to update user role. Please try again.'
       setStatusFeedback({
         type: 'error',
-        message:
-          err?.message || 'Failed to update user role. Please try again.',
+        message: errMsg,
       })
+      toast.error(errMsg)
     } finally {
       setLoadingUserId(null)
     }
@@ -179,11 +194,13 @@ function UsersManagementPage() {
 
   const handleDeleteUser = async (userId: string) => {
     if (userId === session.user.id) {
+      const msg =
+        'Safety rule: You cannot delete your own active administrator account.'
       setStatusFeedback({
         type: 'error',
-        message:
-          'Safety rule: You cannot delete your own active administrator account.',
+        message: msg,
       })
+      toast.error(msg)
       return
     }
 
@@ -196,19 +213,22 @@ function UsersManagementPage() {
       })
 
       setUsers((prev) => prev.filter((u) => u.id !== userId))
-      setConfirmDeleteId(null)
 
+      const successMsg = 'User account has been permanently removed.'
       setStatusFeedback({
         type: 'success',
-        message: 'User account has been permanently removed.',
+        message: successMsg,
       })
+      toast.success(successMsg)
 
       await router.invalidate()
     } catch (err: any) {
+      const errMsg = err?.message || 'Failed to delete user. Please try again.'
       setStatusFeedback({
         type: 'error',
-        message: err?.message || 'Failed to delete user. Please try again.',
+        message: errMsg,
       })
+      toast.error(errMsg)
     } finally {
       setLoadingUserId(null)
     }
@@ -219,12 +239,15 @@ function UsersManagementPage() {
       setStatusFeedback(null)
       const freshUsers = await getUsersServerFn()
       setUsers(freshUsers)
+      toast.success('User list refreshed.')
       await router.invalidate()
     } catch (err: any) {
+      const errMsg = err?.message || 'Failed to refresh user list.'
       setStatusFeedback({
         type: 'error',
-        message: err?.message || 'Failed to refresh user list.',
+        message: errMsg,
       })
+      toast.error(errMsg)
     }
   }
 
@@ -444,7 +467,6 @@ function UsersManagementPage() {
                     const isCurrent = userItem.id === session.user.id
                     const isAdmin = userItem.role === 'admin'
                     const isBusy = loadingUserId === userItem.id
-                    const isDeleting = confirmDeleteId === userItem.id
 
                     const initials = userItem.name
                       ? userItem.name.charAt(0).toUpperCase()
@@ -516,85 +538,85 @@ function UsersManagementPage() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                          {isDeleting ? (
-                            <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 p-1.5 rounded-lg">
-                              <span className="text-xs text-destructive font-medium px-1">
-                                Confirm delete?
-                              </span>
-                              <Button
-                                size="xs"
-                                variant="destructive"
-                                disabled={isBusy}
-                                onClick={() => handleDeleteUser(userItem.id)}
-                                className="h-7 text-xs"
-                              >
-                                {isBusy ? 'Deleting...' : 'Yes, Delete'}
-                              </Button>
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                disabled={isBusy}
-                                onClick={() => setConfirmDeleteId(null)}
-                                className="h-7 text-xs"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          ) : (
-                            <>
-                              {/* Role Toggle Button */}
-                              <Button
-                                size="sm"
-                                variant={isAdmin ? 'outline' : 'default'}
-                                disabled={isBusy || (isCurrent && isAdmin)}
-                                onClick={() =>
-                                  handleRoleToggle(userItem.id, userItem.role)
-                                }
-                                title={
-                                  isCurrent && isAdmin
-                                    ? 'You cannot demote yourself'
-                                    : isAdmin
-                                      ? 'Revoke admin access'
-                                      : 'Grant admin access'
-                                }
-                                className={`h-8 text-xs gap-1.5 font-medium ${
-                                  isAdmin
-                                    ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30'
-                                    : ''
-                                }`}
-                              >
-                                {isBusy ? (
-                                  <RotateCw className="size-3.5 animate-spin" />
-                                ) : isAdmin ? (
-                                  <ShieldAlert className="size-3.5" />
-                                ) : (
-                                  <ShieldCheck className="size-3.5" />
-                                )}
-                                <span>
-                                  {isBusy
-                                    ? 'Updating...'
-                                    : isAdmin
-                                      ? 'Remove Admin'
-                                      : 'Make Admin'}
-                                </span>
-                              </Button>
+                          {/* Role Toggle Button */}
+                          <Button
+                            size="sm"
+                            variant={isAdmin ? 'outline' : 'default'}
+                            disabled={isBusy || (isCurrent && isAdmin)}
+                            onClick={() =>
+                              handleRoleToggle(userItem.id, userItem.role)
+                            }
+                            title={
+                              isCurrent && isAdmin
+                                ? 'You cannot demote yourself'
+                                : isAdmin
+                                  ? 'Revoke admin access'
+                                  : 'Grant admin access'
+                            }
+                            className={`h-8 text-xs gap-1.5 font-medium ${
+                              isAdmin
+                                ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30'
+                                : ''
+                            }`}
+                          >
+                            {isBusy ? (
+                              <RotateCw className="size-3.5 animate-spin" />
+                            ) : isAdmin ? (
+                              <ShieldAlert className="size-3.5" />
+                            ) : (
+                              <ShieldCheck className="size-3.5" />
+                            )}
+                            <span>
+                              {isBusy
+                                ? 'Updating...'
+                                : isAdmin
+                                  ? 'Remove Admin'
+                                  : 'Make Admin'}
+                            </span>
+                          </Button>
 
-                              {/* Delete User Button (not allowed for own account) */}
-                              {!isCurrent && (
+                          {/* Delete User Button with AlertDialog */}
+                          {!isCurrent && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   disabled={isBusy}
-                                  onClick={() =>
-                                    setConfirmDeleteId(userItem.id)
-                                  }
                                   title="Delete user account"
                                   className="h-8 size-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30"
                                 >
                                   <Trash2 className="size-3.5" />
                                 </Button>
-                              )}
-                            </>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Delete User Account?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete{' '}
+                                    <span className="font-semibold text-foreground">
+                                      {userItem.name || userItem.email}
+                                    </span>
+                                    ? This action cannot be undone and will
+                                    permanently remove their account and revoke
+                                    all administrative access immediately.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="destructive"
+                                    onClick={() =>
+                                      handleDeleteUser(userItem.id)
+                                    }
+                                  >
+                                    Delete User
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </div>

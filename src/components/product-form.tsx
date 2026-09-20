@@ -34,6 +34,7 @@ import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
 import { Switch } from './ui/switch'
+import { toast } from './ui/sonner'
 
 interface ProductFormProps {
   initialProduct?: Product | null
@@ -312,15 +313,20 @@ export function ProductForm({
 
   const handleDeleteVariant = (variantId: string) => {
     setVariants((prev) => prev.filter((v) => v.id !== variantId))
+    toast.info('Variant removed.')
   }
 
   const validate = (): boolean => {
     if (!title.trim()) {
-      setValidationError('Please enter a product title.')
+      const err = 'Please enter a product title.'
+      setValidationError(err)
+      toast.error(err)
       return false
     }
     if (!slug.trim()) {
-      setValidationError('Please enter a slug.')
+      const err = 'Please enter a slug.'
+      setValidationError(err)
+      toast.error(err)
       return false
     }
 
@@ -330,35 +336,37 @@ export function ProductForm({
         p.id !== (initialProduct?.id || ''),
     )
     if (collision) {
-      setValidationError(
-        `The slug "${slug}" is already in use by "${collision.title}".`,
-      )
+      const err = `The slug "${slug}" is already in use by "${collision.title}".`
+      setValidationError(err)
+      toast.error(err)
       return false
     }
 
     if (images.some((img) => img.isUploading)) {
-      setValidationError(
-        'Please wait for images to finish uploading before saving.',
-      )
+      const err = 'Please wait for images to finish uploading before saving.'
+      setValidationError(err)
+      toast.error(err)
       return false
     }
 
     if (images.some((img) => img.error)) {
-      setValidationError(
-        'One or more images failed to upload to storage. Please retry or remove them before saving.',
-      )
+      const err = 'One or more images failed to upload to storage. Please retry or remove them before saving.'
+      setValidationError(err)
+      toast.error(err)
       return false
     }
 
     if (hasVariants) {
       if (variants.length === 0) {
-        setValidationError(
-          'Please configure at least one variant or disable the variants toggle.',
-        )
+        const err = 'Please configure at least one variant or disable the variants toggle.'
+        setValidationError(err)
+        toast.error(err)
         return false
       }
       if (variants.some((v) => !v.title.trim())) {
-        setValidationError('All product variants must have a title or name.')
+        const err = 'All product variants must have a title or name.'
+        setValidationError(err)
+        toast.error(err)
         return false
       }
     }
@@ -415,7 +423,9 @@ export function ProductForm({
       }
     } catch (err: any) {
       console.error(err)
-      setValidationError(err.message || 'Failed to save product.')
+      const msg = err.message || 'Failed to save product.'
+      setValidationError(msg)
+      toast.error(msg)
     } finally {
       setIsSaving(false)
     }
