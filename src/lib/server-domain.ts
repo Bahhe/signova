@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { isShopDomain } from './domain'
 
 export interface HostContext {
   host: string
@@ -13,26 +14,37 @@ export const getHostContextServerFn = createServerFn({ method: 'GET' }).handler(
       const { getRequestHeaders, getRequestHost } = await import(
         '@tanstack/react-start/server'
       )
-      const headers = getRequestHeaders() as unknown as Record<
+      const headers = (getRequestHeaders() || {}) as unknown as Record<
         string,
         string | string[] | undefined
       >
-      let host =
-        (typeof getRequestHost === 'function' ? getRequestHost() : '') ||
+
+      // Look for forwarded host first (standard behind reverse proxies/CDNs like Cloudflare, Nginx, Coolify)
+      const forwardedHost =
         (headers['x-forwarded-host'] as string) ||
-        (headers['host'] as string) ||
+        (headers['x-original-host'] as string) ||
+        (headers['x-forwarded-server'] as string) ||
         ''
 
-      if (Array.isArray(host)) host = host[0]
-      const hostname = (host || '').split(':')[0].toLowerCase()
+      let rawHost = ''
+      if (forwardedHost) {
+        rawHost = forwardedHost
+      } else if (typeof getRequestHost === 'function') {
+        rawHost = getRequestHost({ xForwardedHost: true }) || ''
+      }
+      if (!rawHost) {
+        rawHost = (headers['host'] as string) || ''
+      }
 
-      const isShop =
-        hostname.startsWith('shop.') ||
-        hostname === 'shop' ||
-        hostname.includes('.shop.')
+      if (Array.isArray(rawHost)) rawHost = rawHost[0] || ''
+      // If multiple comma-separated proxies exist, take the first client host
+      const primaryHost = (rawHost || '').split(',')[0].trim()
+      const hostname = primaryHost.split(':')[0].toLowerCase()
+
+      const isShop = isShopDomain(hostname)
 
       return {
-        host,
+        host: primaryHost,
         hostname,
         subdomain: isShop ? 'shop' : null,
         isShop,

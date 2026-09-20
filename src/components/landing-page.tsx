@@ -1,8 +1,9 @@
+import * as React from 'react'
 import type { StorefrontSettings } from '#/lib/types'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { Button } from '#/components/ui/button'
-import { getShopBaseUrl } from '#/lib/domain'
 import { ShoppingBag, ArrowUpLeft } from 'lucide-react'
+import { getShopUrl } from '#/lib/domain'
 
 interface LandingPageProps {
   settings?: StorefrontSettings | null
@@ -10,7 +11,11 @@ interface LandingPageProps {
 
 export function LandingPage({ settings }: LandingPageProps) {
   const storeName = settings?.storeName || 'Signova'
-  const shopUrl = getShopBaseUrl()
+  const [shopUrl, setShopUrl] = React.useState<string>(() => getShopUrl('/'))
+
+  React.useEffect(() => {
+    setShopUrl(getShopUrl('/'))
+  }, [])
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary">

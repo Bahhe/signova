@@ -28,7 +28,7 @@ export function PublicShowcasePage({
   serverProducts,
   serverSettings,
 }: PublicShowcasePageProps) {
-  const { products: clientProducts } = useProducts(serverProducts)
+  const { products: clientProducts, refresh } = useProducts(serverProducts)
   const { data: session } = authClient.useSession()
   const user = session?.user as { role?: string } | undefined
   const isAdmin = user?.role === 'admin'
@@ -37,6 +37,13 @@ export function PublicShowcasePage({
 
   // Combine server and client products
   const products = clientProducts.length > 0 ? clientProducts : serverProducts
+
+  // Client-side fallback: fetch products if empty
+  React.useEffect(() => {
+    if (products.length === 0) {
+      void refresh()
+    }
+  }, [products.length, refresh])
 
   const categories = React.useMemo(() => {
     const set = new Set<string>()
@@ -83,7 +90,7 @@ export function PublicShowcasePage({
                 <img
                   src={serverSettings.logoUrl}
                   alt={serverSettings.storeName || 'Store Logo'}
-                  className="h-10 w-auto max-w-[150px] object-contain rounded-md"
+                  className="h-10 w-auto max-w-37.5 object-contain rounded-md"
                 />
               ) : (
                 <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-xs">
@@ -106,7 +113,10 @@ export function PublicShowcasePage({
               <ThemeToggle />
               {isAdmin && (
                 <Button variant="outline" size="sm" asChild>
-                  <a href={dashboardUrl} className="gap-1.5 text-xs font-semibold">
+                  <a
+                    href={dashboardUrl}
+                    className="gap-1.5 text-xs font-semibold"
+                  >
                     <LayoutDashboard className="size-3.5" />
                     <span>لوحة التحكم</span>
                   </a>
@@ -135,7 +145,7 @@ export function PublicShowcasePage({
           {/* Search and Category Filter */}
           <div className="pt-6 max-w-md mx-auto space-y-4">
             <div className="relative">
-              <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Search className="absolute inset-s-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder="ابحث عن المنتجات بالاسم أو الوصف..."
                 value={search}
@@ -171,7 +181,9 @@ export function PublicShowcasePage({
           {filtered.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((product) => {
-                const cover = product.images[0]
+                const cover = product.images[0] as
+                  | (typeof product.images)[0]
+                  | undefined
                 const productHref = getShopUrl(`/${product.slug}`)
                 return (
                   <a
@@ -193,7 +205,7 @@ export function PublicShowcasePage({
                         </div>
                       )}
 
-                      <div className="absolute top-3 start-3 flex flex-wrap gap-1">
+                      <div className="absolute top-3 inset-s-3 flex flex-wrap gap-1">
                         {!product.published && (
                           <Badge variant="destructive" className="text-[10px]">
                             مسودة
@@ -215,7 +227,7 @@ export function PublicShowcasePage({
                       </div>
 
                       <div
-                        className="absolute bottom-3 end-3 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-white text-[11px] font-medium flex items-center gap-1.5"
+                        className="absolute bottom-3 inset-e-3 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-white text-[11px] font-medium flex items-center gap-1.5"
                         dir="ltr"
                       >
                         <Images className="size-3" />

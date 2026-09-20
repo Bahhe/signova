@@ -20,10 +20,8 @@ export const Route = createFileRoute('/')({
         getStorefrontSettingsServerFn().catch(() => null),
       ])
 
-      // If on shop subdomain, fetch products for showcase
-      const products = hostContext.isShop
-        ? await getProductsServerFn().catch(() => [])
-        : []
+      // Fetch products so showcase is ready whenever shop domain is viewed
+      const products = await getProductsServerFn().catch(() => [])
 
       return {
         hostContext,
@@ -44,9 +42,8 @@ export const Route = createFileRoute('/')({
     }
   },
   head: ({ loaderData }) => {
-    const isShop = loaderData?.hostContext?.isShop
-    const storeName =
-      loaderData?.serverSettings?.storeName?.trim() || 'Signova'
+    const isShop = loaderData?.hostContext.isShop
+    const storeName = loaderData?.serverSettings?.storeName.trim() || 'Signova'
 
     if (isShop) {
       return {
@@ -55,7 +52,7 @@ export const Route = createFileRoute('/')({
           {
             name: 'description',
             content:
-              loaderData?.serverSettings?.storeDescription ||
+              loaderData.serverSettings?.storeDescription ||
               'استكشف وتصفح جميع صفحات المنتجات المميزة.',
           },
         ],
