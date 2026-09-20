@@ -14,11 +14,13 @@ import {
   RotateCw,
   Store,
   Share2,
-  Eye,
   BarChart3,
+  Truck,
+  Search,
+  RotateCcw,
+  Building2,
 } from 'lucide-react'
 import { BrandAssetUploader } from '#/components/brand-asset-uploader'
-import { StorefrontFooter } from '#/components/storefront-footer'
 import { getSessionServerFn } from '#/lib/server-auth'
 import { getProductsServerFn } from '#/lib/server-products'
 import {
@@ -26,7 +28,11 @@ import {
   saveStorefrontSettingsServerFn,
 } from '#/lib/server-settings'
 import type { StorefrontSettings, StorefrontSocialLinks } from '#/lib/types'
-import { DEFAULT_STOREFRONT_SETTINGS } from '#/lib/types'
+import {
+  DEFAULT_STOREFRONT_SETTINGS,
+  DEFAULT_DELIVERY_RATES,
+} from '#/lib/types'
+import { WILAYAS } from '#/lib/algeria-locations'
 import { isValidPixelId } from '#/lib/meta-pixel'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { Button } from '#/components/ui/button'
@@ -35,6 +41,7 @@ import { Textarea } from '#/components/ui/textarea'
 import { Label } from '#/components/ui/label'
 import { Separator } from '#/components/ui/separator'
 import { Card } from '#/components/ui/card'
+import { Switch } from '#/components/ui/switch'
 import {
   SidebarProvider,
   SidebarInset,
@@ -110,14 +117,25 @@ function SettingsPage() {
       ...DEFAULT_STOREFRONT_SETTINGS.socialLinks,
       ...initialSettings.socialLinks,
     },
+    deliveryRates: {
+      defaultHomePrice:
+        initialSettings.deliveryRates?.defaultHomePrice ??
+        DEFAULT_DELIVERY_RATES.defaultHomePrice,
+      defaultStopdeskPrice:
+        initialSettings.deliveryRates?.defaultStopdeskPrice ??
+        DEFAULT_DELIVERY_RATES.defaultStopdeskPrice,
+      wilayas: {
+        ...(initialSettings.deliveryRates?.wilayas || {}),
+      },
+    },
   }))
 
+  const [wilayaSearch, setWilayaSearch] = React.useState('')
   const [isSaving, setIsSaving] = React.useState(false)
   const [statusMessage, setStatusMessage] = React.useState<{
     type: 'success' | 'error'
     text: string
   } | null>(null)
-  const [showLivePreview, setShowLivePreview] = React.useState(true)
 
   const handleFieldChange = (
     field: keyof StorefrontSettings,
@@ -141,6 +159,124 @@ function SettingsPage() {
       },
     }))
   }
+
+  const handleDefaultRateChange = (
+    type: 'defaultHomePrice' | 'defaultStopdeskPrice',
+    val: string,
+  ) => {
+    const num = val === '' ? 0 : Math.max(0, parseInt(val, 10) || 0)
+    setFormData((prev) => ({
+      ...prev,
+      deliveryRates: {
+        defaultHomePrice:
+          prev.deliveryRates?.defaultHomePrice ??
+          DEFAULT_DELIVERY_RATES.defaultHomePrice,
+        defaultStopdeskPrice:
+          prev.deliveryRates?.defaultStopdeskPrice ??
+          DEFAULT_DELIVERY_RATES.defaultStopdeskPrice,
+        wilayas: { ...(prev.deliveryRates?.wilayas || {}) },
+        [type]: num,
+      },
+    }))
+  }
+
+  const handleWilayaRateChange = (
+    wilayaCode: string,
+    field: 'homePrice' | 'stopdeskPrice',
+    val: string,
+  ) => {
+    const num = val.trim() === '' ? null : Math.max(0, parseInt(val, 10) || 0)
+    setFormData((prev) => {
+      const currentRates = prev.deliveryRates || DEFAULT_DELIVERY_RATES
+      const existingWilaya = currentRates.wilayas?.[wilayaCode] || {}
+      return {
+        ...prev,
+        deliveryRates: {
+          ...currentRates,
+          wilayas: {
+            ...currentRates.wilayas,
+            [wilayaCode]: {
+              ...existingWilaya,
+              [field]: num,
+            },
+          },
+        },
+      }
+    })
+  }
+
+  const handleWilayaActiveToggle = (wilayaCode: string) => {
+    setFormData((prev) => {
+      const currentRates = prev.deliveryRates || DEFAULT_DELIVERY_RATES
+      const existingWilaya = currentRates.wilayas?.[wilayaCode] || {}
+      const currentActive = existingWilaya.active !== false
+      return {
+        ...prev,
+        deliveryRates: {
+          ...currentRates,
+          wilayas: {
+            ...currentRates.wilayas,
+            [wilayaCode]: {
+              ...existingWilaya,
+              active: !currentActive,
+            },
+          },
+        },
+      }
+    })
+  }
+
+  const handleResetWilaya = (wilayaCode: string) => {
+    setFormData((prev) => {
+      const currentRates = prev.deliveryRates || DEFAULT_DELIVERY_RATES
+      const updatedWilayas = { ...currentRates.wilayas }
+      delete updatedWilayas[wilayaCode]
+      return {
+        ...prev,
+        deliveryRates: {
+          ...currentRates,
+          wilayas: updatedWilayas,
+        },
+      }
+    })
+  }
+
+  const handleResetAllWilayas = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to reset all custom wilaya overrides to defaults?',
+      )
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        deliveryRates: {
+          ...(prev.deliveryRates || DEFAULT_DELIVERY_RATES),
+          wilayas: {},
+        },
+      }))
+    }
+  }
+
+  const customCount = React.useMemo(() => {
+    const wilayas = formData.deliveryRates?.wilayas || {}
+    return Object.values(wilayas).filter(
+      (w) =>
+        (w.homePrice !== null && w.homePrice !== undefined) ||
+        (w.stopdeskPrice !== null && w.stopdeskPrice !== undefined) ||
+        w.active === false,
+    ).length
+  }, [formData.deliveryRates?.wilayas])
+
+  const filteredWilayas = React.useMemo(() => {
+    const q = wilayaSearch.trim().toLowerCase()
+    if (!q) return WILAYAS
+    return WILAYAS.filter(
+      (w) =>
+        w.code.includes(q) ||
+        w.name.toLowerCase().includes(q) ||
+        w.ar_name.includes(q),
+    )
+  }, [wilayaSearch])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -243,18 +379,6 @@ function SettingsPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={() => setShowLivePreview(!showLivePreview)}
-                  className="gap-1.5 text-xs"
-                >
-                  <Eye className="size-3.5" />
-                  <span>
-                    {showLivePreview ? 'Hide Preview' : 'Preview Footer'}
-                  </span>
-                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -478,6 +602,337 @@ function SettingsPage() {
                       Direct map link that opens when a customer clicks "View on
                       map" in the footer.
                     </p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Card: Delivery & Shipping Rates (58 Wilayas) */}
+              <Card className="p-5 sm:p-6 border-border/80 shadow-xs space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                      <Truck className="size-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-base flex items-center gap-2">
+                        <span>Delivery & Shipping Rates</span>
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Configure shipping prices for Stop Desk and Home
+                        Delivery across all 58 Algerian Wilayas.
+                      </p>
+                    </div>
+                  </div>
+
+                  {customCount > 0 && (
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <span className="text-[11px] bg-primary/10 text-primary font-bold px-2.5 py-1 rounded-full">
+                        {customCount} Wilaya{customCount > 1 ? 's' : ''}{' '}
+                        Customized
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        onClick={handleResetAllWilayas}
+                        className="text-[11px] text-muted-foreground hover:text-destructive gap-1"
+                        title="Reset all overrides to defaults"
+                      >
+                        <RotateCcw className="size-3" />
+                        <span>Reset All</span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* 1. Default Base Rates */}
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Building2 className="size-3.5 text-primary" />
+                      <span>General Default Rates</span>
+                    </h3>
+                    <span className="text-[10px] text-muted-foreground">
+                      Applied automatically to all wilayas without custom prices
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Default Home Delivery */}
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="defaultHomePrice"
+                        className="text-xs font-semibold flex items-center justify-between"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Truck className="size-3.5 text-emerald-600" />
+                          <span>Default Home Delivery Price</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          DA
+                        </span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="defaultHomePrice"
+                          type="number"
+                          min="0"
+                          step="50"
+                          value={
+                            formData.deliveryRates?.defaultHomePrice ?? 600
+                          }
+                          onChange={(e) =>
+                            handleDefaultRateChange(
+                              'defaultHomePrice',
+                              e.target.value,
+                            )
+                          }
+                          placeholder="600"
+                          className="h-9 text-xs font-mono pr-12"
+                        />
+                        <span className="absolute right-3 top-2.5 text-[11px] text-muted-foreground font-semibold">
+                          DA
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Default Stop Desk */}
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="defaultStopdeskPrice"
+                        className="text-xs font-semibold flex items-center justify-between"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Store className="size-3.5 text-blue-600" />
+                          <span>Default Stop Desk Price</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          DA
+                        </span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="defaultStopdeskPrice"
+                          type="number"
+                          min="0"
+                          step="50"
+                          value={
+                            formData.deliveryRates?.defaultStopdeskPrice ?? 400
+                          }
+                          onChange={(e) =>
+                            handleDefaultRateChange(
+                              'defaultStopdeskPrice',
+                              e.target.value,
+                            )
+                          }
+                          placeholder="400"
+                          className="h-9 text-xs font-mono pr-12"
+                        />
+                        <span className="absolute right-3 top-2.5 text-[11px] text-muted-foreground font-semibold">
+                          DA
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Wilaya Specific Overrides */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <h3 className="text-xs font-bold text-foreground">
+                        Custom Wilaya Pricing
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Leave blank to use the default rates above. Enter custom
+                        prices for any specific wilaya.
+                      </p>
+                    </div>
+
+                    {/* Search Wilayas */}
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+                      <Input
+                        value={wilayaSearch}
+                        onChange={(e) => setWilayaSearch(e.target.value)}
+                        placeholder="Search wilaya (e.g. 16, Alger, وهران)..."
+                        className="h-8 pl-8 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Wilayas List Table */}
+                  <div className="border border-border/80 rounded-xl overflow-hidden shadow-2xs">
+                    <div className="max-h-105 overflow-y-auto divide-y divide-border/60">
+                      {/* Table Header */}
+                      <div className="bg-muted/60 px-3 py-2 grid grid-cols-12 gap-2 text-[11px] font-bold text-muted-foreground sticky top-0 z-10 backdrop-blur-sm">
+                        <span className="col-span-5 sm:col-span-4">Wilaya</span>
+                        <span className="col-span-3 sm:col-span-3 text-center sm:text-left">
+                          Home
+                        </span>
+                        <span className="col-span-3 sm:col-span-3 text-center sm:text-left">
+                          Stop Desk
+                        </span>
+                        <span className="col-span-1 sm:col-span-2 text-right">
+                          Status
+                        </span>
+                      </div>
+
+                      {filteredWilayas.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-muted-foreground">
+                          No wilayas match "{wilayaSearch}".
+                        </div>
+                      ) : (
+                        filteredWilayas.map((w) => {
+                          const custom =
+                            formData.deliveryRates?.wilayas?.[w.code] || {}
+                          const isCustomized =
+                            (custom.homePrice !== undefined &&
+                              custom.homePrice !== null) ||
+                            (custom.stopdeskPrice !== undefined &&
+                              custom.stopdeskPrice !== null)
+                          const isInactive = custom.active === false
+                          const defaultHome =
+                            formData.deliveryRates?.defaultHomePrice ?? 600
+                          const defaultDesk =
+                            formData.deliveryRates?.defaultStopdeskPrice ?? 400
+
+                          return (
+                            <div
+                              key={w.code}
+                              className={`px-3 py-2 grid grid-cols-12 gap-2 items-center text-xs transition-colors hover:bg-muted/30 ${
+                                isInactive
+                                  ? 'opacity-40 bg-muted/10'
+                                  : isCustomized
+                                    ? 'bg-primary/2'
+                                    : ''
+                              }`}
+                            >
+                              {/* Wilaya Name & Code */}
+                              <div className="col-span-5 sm:col-span-4 flex items-center gap-2 min-w-0">
+                                <span className="font-mono text-[10px] font-bold text-muted-foreground w-6 shrink-0">
+                                  {w.code.padStart(2, '0')}
+                                </span>
+                                <div className="truncate min-w-0">
+                                  <span className="font-semibold text-foreground text-xs block truncate">
+                                    {w.name} ({w.ar_name})
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Home Delivery Input */}
+                              <div className="col-span-3 sm:col-span-3">
+                                <div className="relative">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="50"
+                                    disabled={isInactive}
+                                    value={
+                                      custom.homePrice !== undefined &&
+                                      custom.homePrice !== null
+                                        ? custom.homePrice
+                                        : ''
+                                    }
+                                    onChange={(e) =>
+                                      handleWilayaRateChange(
+                                        w.code,
+                                        'homePrice',
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder={String(defaultHome)}
+                                    className={`h-7 text-xs font-mono pr-7 ${
+                                      custom.homePrice !== undefined &&
+                                      custom.homePrice !== null
+                                        ? 'border-emerald-500/50 bg-emerald-500/5 font-bold text-emerald-700 dark:text-emerald-300'
+                                        : ''
+                                    }`}
+                                  />
+                                  <span className="absolute right-2 top-1.5 text-[10px] text-muted-foreground">
+                                    DA
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Stop Desk Input */}
+                              <div className="col-span-3 sm:col-span-3">
+                                <div className="relative">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="50"
+                                    disabled={isInactive}
+                                    value={
+                                      custom.stopdeskPrice !== undefined &&
+                                      custom.stopdeskPrice !== null
+                                        ? custom.stopdeskPrice
+                                        : ''
+                                    }
+                                    onChange={(e) =>
+                                      handleWilayaRateChange(
+                                        w.code,
+                                        'stopdeskPrice',
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder={String(defaultDesk)}
+                                    className={`h-7 text-xs font-mono pr-7 ${
+                                      custom.stopdeskPrice !== undefined &&
+                                      custom.stopdeskPrice !== null
+                                        ? 'border-blue-500/50 bg-blue-500/5 font-bold text-blue-700 dark:text-blue-300'
+                                        : ''
+                                    }`}
+                                  />
+                                  <span className="absolute right-2 top-1.5 text-[10px] text-muted-foreground">
+                                    DA
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Actions & Active status */}
+                              <div className="col-span-1 sm:col-span-2 flex items-center justify-end gap-1.5">
+                                {isCustomized && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResetWilaya(w.code)}
+                                    className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors hidden sm:inline-flex"
+                                    title="Reset to default rate"
+                                  >
+                                    <RotateCcw className="size-3" />
+                                  </button>
+                                )}
+                                <span
+                                  className={`hidden sm:inline text-[10px] font-medium ${
+                                    isInactive
+                                      ? 'text-muted-foreground'
+                                      : 'text-emerald-600 dark:text-emerald-400'
+                                  }`}
+                                >
+                                  {isInactive ? 'Inactive' : 'Active'}
+                                </span>
+                                <Switch
+                                  size="sm"
+                                  checked={!isInactive}
+                                  onCheckedChange={() =>
+                                    handleWilayaActiveToggle(w.code)
+                                  }
+                                  className="cursor-pointer"
+                                  aria-label={`${
+                                    isInactive ? 'Enable' : 'Disable'
+                                  } delivery for ${w.name}`}
+                                  title={
+                                    isInactive
+                                      ? 'Delivery disabled for this wilaya. Toggle on to enable.'
+                                      : 'Delivery active. Toggle off to disable.'
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -832,27 +1287,6 @@ function SettingsPage() {
                 </Button>
               </div>
             </form>
-
-            {/* Live Storefront Footer Preview */}
-            {showLivePreview && (
-              <div className="space-y-3 pt-6 border-t border-border/80">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <div className="flex items-center gap-2">
-                    <Eye className="size-4 text-primary" />
-                    <h3 className="text-sm font-bold">
-                      Live Storefront Footer & Brand Preview
-                    </h3>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    Updates in real time as you adjust your store logo, name,
-                    contacts, and links
-                  </span>
-                </div>
-                <div className="rounded-2xl border border-border/80 overflow-hidden shadow-sm bg-card/60 backdrop-blur-sm">
-                  <StorefrontFooter settings={formData} />
-                </div>
-              </div>
-            )}
           </main>
         </SidebarInset>
       </SidebarProvider>

@@ -11,6 +11,7 @@ import type {
   StorefrontSocialLinks,
   ProductVariant,
   ProductVariantOption,
+  DeliveryRatesConfig,
 } from '#/lib/types'
 
 export const todos = pgTable('todos', {
@@ -32,6 +33,7 @@ export const products = pgTable('products', {
   ctaText: text('cta_text').default('Order Now'),
   ctaUrl: text('cta_url').default('#order'),
   published: boolean('published').notNull().default(true),
+  freeDelivery: boolean('free_delivery').notNull().default(false),
   variants: jsonb('variants').$type<ProductVariant[]>().notNull().default([]),
   variantOptions: jsonb('variant_options')
     .$type<ProductVariantOption[]>()
@@ -119,6 +121,13 @@ export const storefrontSettings = pgTable('storefront_settings', {
   metaPixelId: text('meta_pixel_id').default(''),
   logoUrl: text('logo_url').default(''),
   faviconUrl: text('favicon_url').default(''),
+  deliveryRates: jsonb('delivery_rates')
+    .$type<DeliveryRatesConfig>()
+    .default({
+      defaultHomePrice: 600,
+      defaultStopdeskPrice: 400,
+      wilayas: {},
+    }),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 

@@ -17,9 +17,13 @@
     "youtube": "",
     "facebook": "https://facebook.com",
     "linkedin": "",
-    "telegram": "",
     "whatsapp": "+213555012345",
     "instagram": "https://instagram.com"
+  },
+  "deliveryRates": {
+    "defaultHomePrice": 600,
+    "defaultStopdeskPrice": 400,
+    "wilayas": {}
   },
   "updatedAt": "2026-09-19T11:52:57.216Z"
 }

@@ -67,13 +67,37 @@ const WILAYA_NAMES: Record<string, { name: string; ar_name: string }> = {
   '46': { name: 'Ain Temouchent', ar_name: 'عين تموشنت' },
   '47': { name: 'Ghardaia', ar_name: 'غرداية' },
   '48': { name: 'Relizane', ar_name: 'غليزان' },
+  '49': { name: 'Timimoun', ar_name: 'تيميمون' },
+  '50': { name: 'Bordj Badji Mokhtar', ar_name: 'برج باجي مختار' },
+  '51': { name: 'Ouled Djellal', ar_name: 'أولاد جلال' },
+  '52': { name: 'Beni Abbes', ar_name: 'بني عباس' },
+  '53': { name: 'In Salah', ar_name: 'عين صالح' },
+  '54': { name: 'In Guezzam', ar_name: 'عين قزام' },
+  '55': { name: 'Touggourt', ar_name: 'تقرت' },
+  '56': { name: 'Djanet', ar_name: 'جانت' },
+  '57': { name: "El M'Ghair", ar_name: 'المغير' },
+  '58': { name: 'El Menia', ar_name: 'المنيعة' },
 }
 
 export const ALL_COMMUNES: CommuneLocation[] =
   locationsData
 
-// Generate sorted Wilayas list (1 to 48)
-export const WILAYAS: Wilaya[] = Array.from({ length: 48 }, (_, i) => {
+// Additional fallback communes for newly created wilayas (49-58)
+const NEW_WILAYA_COMMUNES: Record<string, { name: string; ar_name: string }[]> = {
+  '49': [{ name: 'Timimoun', ar_name: 'تيميمون' }, { name: 'Aougrout', ar_name: 'أوقروت' }, { name: 'Tinerkouk', ar_name: 'تينركوك' }],
+  '50': [{ name: 'Bordj Badji Mokhtar', ar_name: 'برج باجي مختار' }, { name: 'Timiaouine', ar_name: 'تيمياوين' }],
+  '51': [{ name: 'Ouled Djellal', ar_name: 'أولاد جلال' }, { name: 'Sidi Khaled', ar_name: 'سيدي خالد' }],
+  '52': [{ name: 'Beni Abbes', ar_name: 'بني عباس' }, { name: 'Kerzaz', ar_name: 'كرزاز' }, { name: 'El Ouata', ar_name: 'الواتة' }],
+  '53': [{ name: 'In Salah', ar_name: 'عين صالح' }, { name: 'Foggaret Ezzaouia', ar_name: 'فقارة الزاوية' }, { name: 'In Ghar', ar_name: 'عين غار' }],
+  '54': [{ name: 'In Guezzam', ar_name: 'عين قزام' }, { name: 'Tin Zouatine', ar_name: 'تين زواتين' }],
+  '55': [{ name: 'Touggourt', ar_name: 'تقرت' }, { name: 'Nezla', ar_name: 'النزلة' }, { name: 'Tebesbest', ar_name: 'تبسبست' }],
+  '56': [{ name: 'Djanet', ar_name: 'جانت' }, { name: 'Bordj El Haouas', ar_name: 'برج الحواس' }],
+  '57': [{ name: "El M'Ghair", ar_name: 'المغير' }, { name: 'Djamaa', ar_name: 'جامعة' }],
+  '58': [{ name: 'El Menia', ar_name: 'المنيعة' }, { name: 'Hassi Gara', ar_name: 'حاسي قارة' }],
+}
+
+// Generate sorted Wilayas list (1 to 58)
+export const WILAYAS: Wilaya[] = Array.from({ length: 58 }, (_, i) => {
   const code = String(i + 1)
   const info = WILAYA_NAMES[code] || {
     name: `Wilaya ${code}`,
@@ -96,6 +120,19 @@ for (const commune of ALL_COMMUNES) {
     communesByWilaya[commune.wilaya_id] = []
   }
   communesByWilaya[commune.wilaya_id].push(commune)
+}
+
+// Inject fallback communes for Wilayas 49 to 58 if not present
+for (const [wCode, cList] of Object.entries(NEW_WILAYA_COMMUNES)) {
+  if (!communesByWilaya[wCode] || communesByWilaya[wCode].length === 0) {
+    communesByWilaya[wCode] = cList.map((c, idx) => ({
+      id: `${wCode}-${idx + 1}`,
+      post_code: `${wCode}000`,
+      name: c.name,
+      wilaya_id: wCode,
+      ar_name: c.ar_name,
+    }))
+  }
 }
 
 // Sort communes alphabetically by name within each wilaya

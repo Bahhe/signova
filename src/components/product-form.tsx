@@ -19,6 +19,7 @@ import {
   Sparkles,
   Trash2,
   Image as ImageIcon,
+  Truck,
 } from 'lucide-react'
 import type {
   Product,
@@ -66,6 +67,9 @@ export function ProductForm({
   const [ctaText, setCtaText] = React.useState(initialProduct?.ctaText || '')
   const [published, setPublished] = React.useState<boolean>(
     initialProduct ? initialProduct.published !== false : true,
+  )
+  const [freeDelivery, setFreeDelivery] = React.useState<boolean>(
+    initialProduct ? Boolean(initialProduct.freeDelivery) : false,
   )
 
   // Product Variants state
@@ -131,6 +135,7 @@ export function ProductForm({
       setNewFeature('')
       setCtaText(initialProduct.ctaText || '')
       setPublished(initialProduct.published !== false)
+      setFreeDelivery(Boolean(initialProduct.freeDelivery))
       setHasVariants(
         Boolean(initialProduct.variants && initialProduct.variants.length > 0),
       )
@@ -149,6 +154,7 @@ export function ProductForm({
       setNewFeature('')
       setCtaText('')
       setPublished(true)
+      setFreeDelivery(false)
       setHasVariants(false)
       setVariantOptions([])
       setVariants([])
@@ -381,6 +387,7 @@ export function ProductForm({
         ctaText: ctaText.trim() || undefined,
         ctaUrl: initialProduct?.ctaUrl || '#order',
         published,
+        freeDelivery,
         createdAt: initialProduct?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
@@ -401,6 +408,7 @@ export function ProductForm({
         setNewFeature('')
         setCtaText('')
         setPublished(true)
+        setFreeDelivery(false)
         setHasVariants(false)
         setVariantOptions([])
         setVariants([])
@@ -426,6 +434,7 @@ export function ProductForm({
     setNewFeature('')
     setCtaText('')
     setPublished(true)
+    setFreeDelivery(false)
     setHasVariants(false)
     setVariantOptions([])
     setVariants([])
@@ -643,6 +652,34 @@ export function ProductForm({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Free Delivery Toggle */}
+      <div className="flex items-center justify-between p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 transition-all">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <Truck className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <Label
+              htmlFor="prod-free-delivery"
+              className="text-xs font-bold text-foreground cursor-pointer"
+            >
+              توصيل مجاني لهذا المنتج (Free Delivery)
+            </Label>
+            {freeDelivery && (
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">
+                0 دج
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            عند تفعيل هذا الخيار، سيكون التوصيل مجانياً (0 دج للمنزل واستلام المكتب) لهذا المنتج عند الطلب.
+          </p>
+        </div>
+        <Switch
+          id="prod-free-delivery"
+          checked={freeDelivery}
+          onCheckedChange={setFreeDelivery}
+        />
       </div>
 
       {/* 4. Description */}

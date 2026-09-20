@@ -18,7 +18,7 @@ export function LandingPage({ settings }: LandingPageProps) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-arabic">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-md sticky top-0 z-50 bg-background/80">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex flex-row-reverse items-center justify-between">

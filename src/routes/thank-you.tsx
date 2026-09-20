@@ -37,6 +37,8 @@ interface ThankYouSearchParams {
   value?: number
   currency?: string
   deliveryType?: string
+  deliveryFee?: string
+  isFreeDelivery?: string
   fullName?: string
   phone?: string
   wilaya?: string
@@ -58,6 +60,12 @@ export const Route = createFileRoute('/thank-you')({
     currency: typeof search.currency === 'string' ? search.currency : 'DZD',
     deliveryType:
       typeof search.deliveryType === 'string' ? search.deliveryType : undefined,
+    deliveryFee:
+      typeof search.deliveryFee === 'string' ? search.deliveryFee : undefined,
+    isFreeDelivery:
+      typeof search.isFreeDelivery === 'string'
+        ? search.isFreeDelivery
+        : undefined,
     fullName: typeof search.fullName === 'string' ? search.fullName : undefined,
     phone: typeof search.phone === 'string' ? search.phone : undefined,
     wilaya: typeof search.wilaya === 'string' ? search.wilaya : undefined,
@@ -301,7 +309,7 @@ function ThankYouPageRoute() {
                         الخيار / الموديل: {search.variantTitle}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 pt-0.5">
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
                       <Badge
                         variant="secondary"
                         className="text-xs font-medium"
@@ -311,6 +319,18 @@ function ThankYouPageRoute() {
                       {search.price && (
                         <span className="text-xs text-muted-foreground">
                           سعر الوحدة: {search.price}
+                        </span>
+                      )}
+                      {search.deliveryFee !== undefined && (
+                        <span className="text-xs font-medium text-foreground">
+                          • التوصيل:{' '}
+                          {search.isFreeDelivery === 'true' || search.deliveryFee === '0' ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              مجاني (0 دج)
+                            </span>
+                          ) : (
+                            `${search.deliveryFee} دج`
+                          )}
                         </span>
                       )}
                     </div>

@@ -218,7 +218,7 @@ export function StorefrontFooter({
                 <img
                   src={settings.logoUrl}
                   alt={settings.storeName || 'Store Logo'}
-                  className="h-10 w-auto max-w-[160px] object-contain rounded-md"
+                  className="h-10 w-auto max-w-40 object-contain rounded-md"
                 />
               ) : (
                 <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-xs">
@@ -398,26 +398,35 @@ export function StorefrontFooter({
                 </div>
               )}
 
-              <div className="pt-2 border-t border-border/40 space-y-1.5 text-xs text-muted-foreground">
-                <div className="font-semibold text-foreground">روابط سريعة</div>
-                <ul className="space-y-1">
-                  <li>
-                    <a
-                      href="/p"
-                      className="hover:text-primary transition-colors"
-                    >
-                      • تصفح جميع المنتجات
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#order"
-                      className="hover:text-primary transition-colors"
-                    >
-                      • طلب فوري والدفع عند الاستلام
-                    </a>
-                  </li>
-                </ul>
+              <div className="pt-2 border-t border-border/40 flex items-start gap-3">
+                <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <ExternalLink className="size-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] text-muted-foreground font-medium">
+                    روابط سريعة
+                  </div>
+                  <ul className="space-y-1.5 mt-1.5">
+                    <li>
+                      <a
+                        href="/p"
+                        className="group inline-flex items-center gap-2 text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                      >
+                        <span className="size-1 rounded-full bg-primary shrink-0 group-hover:scale-125 transition-transform" />
+                        <span>تصفح جميع المنتجات</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#order"
+                        className="group inline-flex items-center gap-2 text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                      >
+                        <span className="size-1 rounded-full bg-primary shrink-0 group-hover:scale-125 transition-transform" />
+                        <span>طلب فوري والدفع عند الاستلام</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

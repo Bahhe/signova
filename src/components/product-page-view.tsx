@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Store,
   Layers,
+  Truck,
 } from 'lucide-react'
 import type {
   Product,
@@ -486,6 +487,15 @@ export function ProductPageView({
                 {product.badge}
               </Badge>
             )}
+            {product.freeDelivery && (
+              <Badge
+                variant="outline"
+                className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold gap-1 py-1 px-2.5"
+              >
+                <Truck className="size-3" />
+                <span>توصيل مجاني (Free Delivery)</span>
+              </Badge>
+            )}
           </div>
 
           {/* Title & Price & CTA Banner */}
@@ -712,6 +722,7 @@ export function ProductPageView({
             product={product}
             selectedVariant={selectedVariant}
             onSelectVariant={handleDirectVariantSelect}
+            deliveryRates={settings?.deliveryRates}
           />
         </div>
       </main>

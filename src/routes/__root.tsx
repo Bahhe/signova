@@ -65,9 +65,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (typeof document === 'undefined') return
     const fav = settings?.faviconUrl?.trim() || '/favicon.ico'
-    let link = document.querySelector<HTMLLinkElement>(
-      "link[rel~='icon']",
-    )
+    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
     if (!link) {
       link = document.createElement('link')
       link.rel = 'icon'

@@ -15,7 +15,13 @@ import {
   Layers,
 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
-import type { Product, ProductVariant, DeliveryType } from '#/lib/types'
+import type {
+  Product,
+  ProductVariant,
+  DeliveryType,
+  DeliveryRatesConfig,
+} from '#/lib/types'
+import { DEFAULT_DELIVERY_RATES } from '#/lib/types'
 import { getWilayas, getCommunesForWilaya } from '#/lib/algeria-locations'
 import { submitOrderServerFn } from '#/lib/server-orders'
 import { parseNumericPrice } from '#/lib/meta-pixel'
@@ -27,6 +33,7 @@ interface OrderFormProps {
   product: Product
   selectedVariant?: ProductVariant | null
   onSelectVariant?: (variant: ProductVariant) => void
+  deliveryRates?: DeliveryRatesConfig
   className?: string
 }
 
@@ -34,6 +41,7 @@ export function OrderForm({
   product,
   selectedVariant: propSelectedVariant,
   onSelectVariant,
+  deliveryRates,
   className = '',
 }: OrderFormProps) {
   const navigate = useNavigate()
@@ -63,6 +71,7 @@ export function OrderForm({
       : null)
 
   const effectivePrice = activeVariant?.price || product.price
+  const isFreeDelivery = Boolean(product.freeDelivery)
 
   // Form State
   const [fullName, setFullName] = React.useState('')
@@ -82,6 +91,51 @@ export function OrderForm({
     message?: string
   } | null>(null)
 
+  // Wilaya Shipping Rates calculation
+  const wilayaRates = React.useMemo(() => {
+    const config = deliveryRates || DEFAULT_DELIVERY_RATES
+    const defaultHome = config.defaultHomePrice ?? 600
+    const defaultDesk = config.defaultStopdeskPrice ?? 400
+
+    if (!selectedWilaya) {
+      return {
+        homePrice: defaultHome,
+        stopdeskPrice: defaultDesk,
+        isCustom: false,
+        isAvailable: true,
+      }
+    }
+
+    const custom = config.wilayas?.[selectedWilaya]
+    const homePrice =
+      custom?.homePrice !== undefined && custom?.homePrice !== null
+        ? custom.homePrice
+        : defaultHome
+    const stopdeskPrice =
+      custom?.stopdeskPrice !== undefined && custom?.stopdeskPrice !== null
+        ? custom.stopdeskPrice
+        : defaultDesk
+    const isAvailable = custom?.active !== false
+
+    return {
+      homePrice,
+      stopdeskPrice,
+      isCustom:
+        (custom?.homePrice !== undefined && custom?.homePrice !== null) ||
+        (custom?.stopdeskPrice !== undefined && custom?.stopdeskPrice !== null),
+      isAvailable,
+    }
+  }, [deliveryRates, selectedWilaya])
+
+  // Current active delivery fee
+  const effectiveDeliveryFee = React.useMemo(() => {
+    if (isFreeDelivery) return 0
+    if (!selectedWilaya) return null
+    return deliveryType === 'home delivery'
+      ? wilayaRates.homePrice
+      : wilayaRates.stopdeskPrice
+  }, [isFreeDelivery, selectedWilaya, deliveryType, wilayaRates])
+
   // Get communes dynamically when Wilaya changes
   const availableCommunes = React.useMemo(() => {
     if (!selectedWilaya) return []
@@ -95,29 +149,31 @@ export function OrderForm({
     setSelectedCommune('')
   }
 
-  // Calculate dynamic total using effective variant price
-  const calculateTotal = React.useCallback(() => {
-    if (!effectivePrice) return null
-    const numericStr = effectivePrice.replace(/[^\d.]/g, '')
-    const numeric = parseFloat(numericStr)
-    if (isNaN(numeric) || numeric <= 0) return effectivePrice
-    const total = numeric * quantity
-    if (
-      /dzd/i.test(effectivePrice) ||
-      /da/i.test(effectivePrice) ||
-      /دج/i.test(effectivePrice) ||
-      /د\.ج/i.test(effectivePrice)
-    ) {
-      return `${total.toLocaleString('fr-FR')} دج`
-    }
-    if (/[$€£]/.test(effectivePrice)) {
-      const symbol = effectivePrice.match(/[$€£]/)?.[0] || ''
-      return `${total.toLocaleString('fr-FR')} ${symbol}`
-    }
-    return `${total.toLocaleString('fr-FR')} دج`
-  }, [effectivePrice, quantity])
+  // Calculate Subtotal & Grand Total
+  const unitPriceNumeric = React.useMemo(
+    () => parseNumericPrice(effectivePrice),
+    [effectivePrice],
+  )
+  const productSubtotal = unitPriceNumeric * quantity
 
-  const totalDisplay = calculateTotal()
+  const grandTotalNumeric = React.useMemo(() => {
+    if (productSubtotal <= 0) return 0
+    return productSubtotal + (effectiveDeliveryFee ?? 0)
+  }, [productSubtotal, effectiveDeliveryFee])
+
+  const subtotalDisplay = React.useMemo(() => {
+    return productSubtotal > 0
+      ? `${productSubtotal.toLocaleString('fr-FR')} دج`
+      : effectivePrice || ''
+  }, [productSubtotal, effectivePrice])
+
+  const totalDisplay = React.useMemo(() => {
+    if (grandTotalNumeric > 0) {
+      return `${grandTotalNumeric.toLocaleString('fr-FR')} دج`
+    }
+    if (!effectivePrice) return null
+    return `${productSubtotal.toLocaleString('fr-FR')} دج`
+  }, [grandTotalNumeric, productSubtotal, effectivePrice])
 
   const handleVariantSelect = (v: ProductVariant) => {
     setInternalVariant(v)
@@ -166,29 +222,52 @@ export function OrderForm({
       ? `${wilayaObj.code} - ${wilayaObj.ar_name} (${wilayaObj.name})`
       : selectedWilaya
 
+    if (wilayaRates.isAvailable === false) {
+      setError('نعتذر، خدمة التوصيل غير متوفرة حالياً للولاية المختارة.')
+      return
+    }
+
+    const feeVal = effectiveDeliveryFee ?? 0
+    const homePriceFormatted = isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : deliveryType === 'home delivery'
+        ? `${feeVal} دج`
+        : '-'
+    const stopdeskPriceFormatted = isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : deliveryType === 'stopdesk'
+        ? `${feeVal} دج`
+        : '-'
+
+    const orderData = {
+      fullName: fullName.trim(),
+      phone: cleanPhone,
+      wilaya: wilayaFormatted,
+      commune: selectedCommune,
+      deliveryType,
+      deliveryFee: feeVal,
+      homeDeliveryPrice: homePriceFormatted,
+      stopdeskPrice: stopdeskPriceFormatted,
+      isFreeDelivery,
+      productId: product.id,
+      productTitle: product.title,
+      productPrice: effectivePrice,
+      quantity,
+      notes: notes.trim(),
+      variantId: activeVariant?.id,
+      variantTitle: activeVariant?.title,
+    }
+
     setIsSubmitting(true)
 
     try {
       const res = await submitOrderServerFn({
-        data: {
-          fullName: fullName.trim(),
-          phone: cleanPhone,
-          wilaya: wilayaFormatted,
-          commune: selectedCommune,
-          deliveryType,
-          productId: product.id,
-          productTitle: product.title,
-          productPrice: effectivePrice,
-          quantity,
-          notes: notes.trim(),
-          variantId: activeVariant?.id,
-          variantTitle: activeVariant?.title,
-        },
+        data: orderData,
       })
 
       if (res.success) {
         const confirmedOrderId = res.orderId || 'ORD-CONFIRMED'
-        const numericTotal = parseNumericPrice(effectivePrice) * quantity
+        const numericTotal = grandTotalNumeric > 0 ? grandTotalNumeric : unitPriceNumeric * quantity
 
         setOrderSuccess({
           orderId: confirmedOrderId,
@@ -207,6 +286,8 @@ export function OrderForm({
             value: numericTotal,
             currency: 'DZD',
             deliveryType,
+            deliveryFee: String(feeVal),
+            isFreeDelivery: isFreeDelivery ? 'true' : 'false',
             fullName: fullName.trim(),
             phone: cleanPhone,
             wilaya: wilayaFormatted,
@@ -220,26 +301,13 @@ export function OrderForm({
         const apiRes = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName: fullName.trim(),
-            phone: cleanPhone,
-            wilaya: wilayaFormatted,
-            commune: selectedCommune,
-            deliveryType,
-            productId: product.id,
-            productTitle: product.title,
-            productPrice: effectivePrice,
-            quantity,
-            notes: notes.trim(),
-            variantId: activeVariant?.id,
-            variantTitle: activeVariant?.title,
-          }),
+          body: JSON.stringify(orderData),
         })
 
         const data = await apiRes.json()
         if (apiRes.ok && data.success) {
           const confirmedOrderId = data.orderId || 'ORD-CONFIRMED'
-          const numericTotal = parseNumericPrice(effectivePrice) * quantity
+          const numericTotal = grandTotalNumeric > 0 ? grandTotalNumeric : unitPriceNumeric * quantity
 
           setOrderSuccess({
             orderId: confirmedOrderId,
@@ -258,6 +326,8 @@ export function OrderForm({
               value: numericTotal,
               currency: 'DZD',
               deliveryType,
+              deliveryFee: String(feeVal),
+              isFreeDelivery: isFreeDelivery ? 'true' : 'false',
               fullName: fullName.trim(),
               phone: cleanPhone,
               wilaya: wilayaFormatted,
@@ -279,25 +349,12 @@ export function OrderForm({
         const apiRes = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName: fullName.trim(),
-            phone: cleanPhone,
-            wilaya: wilayaFormatted,
-            commune: selectedCommune,
-            deliveryType,
-            productId: product.id,
-            productTitle: product.title,
-            productPrice: effectivePrice,
-            quantity,
-            notes: notes.trim(),
-            variantId: activeVariant?.id,
-            variantTitle: activeVariant?.title,
-          }),
+          body: JSON.stringify(orderData),
         })
         const data = await apiRes.json()
         if (apiRes.ok && data.success) {
           const confirmedOrderId = data.orderId || 'ORD-CONFIRMED'
-          const numericTotal = parseNumericPrice(effectivePrice) * quantity
+          const numericTotal = grandTotalNumeric > 0 ? grandTotalNumeric : unitPriceNumeric * quantity
 
           setOrderSuccess({
             orderId: confirmedOrderId,
@@ -316,6 +373,8 @@ export function OrderForm({
               value: numericTotal,
               currency: 'DZD',
               deliveryType,
+              deliveryFee: String(feeVal),
+              isFreeDelivery: isFreeDelivery ? 'true' : 'false',
               fullName: fullName.trim(),
               phone: cleanPhone,
               wilaya: wilayaFormatted,
@@ -659,11 +718,26 @@ export function OrderForm({
                 className="mt-1 text-primary focus:ring-primary"
               />
               <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <Truck className="size-4 text-primary" />
-                  <span className="text-xs font-bold text-foreground">
-                    توصيل إلى باب المنزل
-                  </span>
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="size-4 text-primary" />
+                    <span className="text-xs font-bold text-foreground">
+                      توصيل إلى باب المنزل
+                    </span>
+                  </div>
+                  {isFreeDelivery ? (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      مجاني (0 دج)
+                    </span>
+                  ) : selectedWilaya ? (
+                    <span className="text-xs font-bold text-primary">
+                      + {wilayaRates.homePrice} دج
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">
+                      {wilayaRates.homePrice} دج
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   توصيل سريع ومباشر إلى عنوانك الشخصي أو مقر العمل
@@ -688,11 +762,26 @@ export function OrderForm({
                 className="mt-1 text-primary focus:ring-primary"
               />
               <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <Store className="size-4 text-primary" />
-                  <span className="text-xs font-bold text-foreground">
-                    استلام من المكتب (Stop Desk)
-                  </span>
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Store className="size-4 text-primary" />
+                    <span className="text-xs font-bold text-foreground">
+                      استلام من المكتب (Stop Desk)
+                    </span>
+                  </div>
+                  {isFreeDelivery ? (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      مجاني (0 دج)
+                    </span>
+                  ) : selectedWilaya ? (
+                    <span className="text-xs font-bold text-primary">
+                      + {wilayaRates.stopdeskPrice} دج
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">
+                      {wilayaRates.stopdeskPrice} دج
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   استلم طردك من أقرب نقطة توزيع أو مكتب توصيل في ولايتك
@@ -745,7 +834,7 @@ export function OrderForm({
         </div>
 
         {/* Order Summary & Pricing box */}
-        <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-2">
+        <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-2.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>المنتج المحدد:</span>
             <span className="font-semibold text-foreground truncate max-w-[200px] sm:max-w-xs">
@@ -776,10 +865,48 @@ export function OrderForm({
             <span className="font-semibold text-foreground">x{quantity}</span>
           </div>
 
-          <div className="border-t border-border/60 pt-2 mt-2 flex items-center justify-between">
-            <span className="text-sm font-bold text-foreground">
-              المجموع الإجمالي:
+          {subtotalDisplay && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/40">
+              <span>المجموع الفرعي (المنتج):</span>
+              <span className="font-medium text-foreground">
+                {subtotalDisplay}
+              </span>
+            </div>
+          )}
+
+          {/* Delivery Fee Line */}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground flex items-center gap-1">
+              <Truck className="size-3 text-primary" />
+              <span>
+                رسوم التوصيل ({deliveryType === 'home delivery' ? 'للمنزل' : 'Stop Desk'}):
+              </span>
             </span>
+
+            {isFreeDelivery ? (
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full text-[11px]">
+                توصيل مجاني (0 دج)
+              </span>
+            ) : selectedWilaya ? (
+              <span className="font-bold text-foreground">
+                + {effectiveDeliveryFee} دج
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">
+                (اختر الولاية لتحديد السعر)
+              </span>
+            )}
+          </div>
+
+          <div className="border-t border-border/60 pt-2 mt-2 flex items-center justify-between">
+            <div>
+              <span className="text-sm font-bold text-foreground block">
+                المجموع الإجمالي:
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                (شامل التوصيل عند الاستلام)
+              </span>
+            </div>
             <span className="text-lg font-black text-primary">
               {totalDisplay || 'يحدد عند التأكيد'}
             </span>

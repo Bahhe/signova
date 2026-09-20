@@ -290,7 +290,7 @@ async function ensureHeadersInGoogleSheet(
         !data.values[0] ||
         data.values[0].length === 0
       ) {
-        // Sheet is empty, write header row
+        // Sheet is empty, write header row (A1:P1)
         const headers = [
           'Order ID',
           'Date',
@@ -299,6 +299,9 @@ async function ensureHeadersInGoogleSheet(
           'Wilaya',
           'Commune',
           'Delivery Type',
+          'Home Delivery (توصيل للمنزل)',
+          'Stop Desk (استلام من المكتب)',
+          'Delivery Fee (سعر التوصيل)',
           'Product',
           'Unit Price',
           'Quantity',
@@ -306,7 +309,7 @@ async function ensureHeadersInGoogleSheet(
           'Notes',
           'Status',
         ]
-        const writeHeaderUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(`${rangeName}!A1:M1`)}?valueInputOption=USER_ENTERED`
+        const writeHeaderUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(`${rangeName}!A1:P1`)}?valueInputOption=USER_ENTERED`
         await fetch(writeHeaderUrl, {
           method: 'PUT',
           headers: {
@@ -314,7 +317,7 @@ async function ensureHeadersInGoogleSheet(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            range: `${rangeName}!A1:M1`,
+            range: `${rangeName}!A1:P1`,
             majorDimension: 'ROWS',
             values: [headers],
           }),
@@ -345,12 +348,30 @@ async function submitViaServiceAccount(
   await ensureHeadersInGoogleSheet(accessToken, sheetId, sheetRange)
 
   // Row columns:
-  // [ Order ID, Date, Full Name, Phone Number, Wilaya, Commune, Delivery Type, Product, Unit Price, Quantity, Total Amount, Notes, Status ]
+  // [ Order ID, Date, Full Name, Phone Number, Wilaya, Commune, Delivery Type, Home Delivery, Stop Desk, Delivery Fee, Product, Unit Price, Quantity, Total Amount, Notes, Status ]
   const formattedDate = new Date(order.createdAt).toLocaleString('fr-DZ', {
     timeZone: 'Africa/Algiers',
     dateStyle: 'short',
     timeStyle: 'short',
   })
+
+  const homeDeliveryCol =
+    order.homeDeliveryPrice ||
+    (order.isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : order.deliveryType === 'home delivery'
+        ? `${order.deliveryFee ?? 0} دج`
+        : '-')
+  const stopdeskCol =
+    order.stopdeskPrice ||
+    (order.isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : order.deliveryType === 'stopdesk'
+        ? `${order.deliveryFee ?? 0} دج`
+        : '-')
+  const deliveryFeeCol = order.isFreeDelivery
+    ? 'مجاني (0 دج)'
+    : `${order.deliveryFee ?? 0} دج`
 
   const row = [
     order.id,
@@ -362,6 +383,9 @@ async function submitViaServiceAccount(
     order.deliveryType === 'home delivery'
       ? 'Home Delivery (À Domicile)'
       : 'Stop Desk (Point Relais)',
+    homeDeliveryCol,
+    stopdeskCol,
+    deliveryFeeCol,
     order.variantTitle
       ? `${order.productTitle} (${order.variantTitle})`
       : order.productTitle,
@@ -372,7 +396,7 @@ async function submitViaServiceAccount(
     order.status || 'New',
   ]
 
-  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(`${sheetRange}!A:M`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`
+  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(`${sheetRange}!A:P`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`
 
   const appendRes = await fetch(appendUrl, {
     method: 'POST',
@@ -381,7 +405,7 @@ async function submitViaServiceAccount(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      range: `${sheetRange}!A:M`,
+      range: `${sheetRange}!A:P`,
       majorDimension: 'ROWS',
       values: [row],
     }),
@@ -420,6 +444,24 @@ async function submitViaWebhook(
     timeZone: 'Africa/Algiers',
   })
 
+  const homeDeliveryCol =
+    order.homeDeliveryPrice ||
+    (order.isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : order.deliveryType === 'home delivery'
+        ? `${order.deliveryFee ?? 0} دج`
+        : '-')
+  const stopdeskCol =
+    order.stopdeskPrice ||
+    (order.isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : order.deliveryType === 'stopdesk'
+        ? `${order.deliveryFee ?? 0} دج`
+        : '-')
+  const deliveryFeeCol = order.isFreeDelivery
+    ? 'مجاني (0 دج)'
+    : `${order.deliveryFee ?? 0} دج`
+
   const payload = {
     orderId: order.id,
     createdAt: formattedDate,
@@ -428,6 +470,10 @@ async function submitViaWebhook(
     wilaya: order.wilaya,
     commune: order.commune,
     deliveryType: order.deliveryType,
+    homeDelivery: homeDeliveryCol,
+    stopdeskDelivery: stopdeskCol,
+    deliveryFee: deliveryFeeCol,
+    isFreeDelivery: Boolean(order.isFreeDelivery),
     productTitle: order.productTitle,
     variantTitle: order.variantTitle || '',
     productPrice: order.productPrice || '',

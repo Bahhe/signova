@@ -1,21 +1,17 @@
 import type { Order, OrderInput, OrderSubmissionResult } from '../lib/types.ts'
 import { submitOrderToGoogleSheets } from './google-sheets.ts'
 
-function calculateTotal(priceStr?: string, quantity: number = 1): string {
+function calculateTotal(
+  priceStr?: string,
+  quantity: number = 1,
+  deliveryFee: number = 0,
+): string {
   if (!priceStr) return 'N/A'
-  // Try extracting numeric amount from price string, e.g. "2,500 DZD" -> 2500, or "4500 DA" -> 4500
   const cleanNumeric = priceStr.replace(/[^\d.]/g, '')
   const numeric = parseFloat(cleanNumeric)
   if (!isNaN(numeric) && numeric > 0) {
-    const total = numeric * quantity
-    // Re-apply currency if detected
-    if (/dzd/i.test(priceStr)) return `${total.toLocaleString()} DZD`
-    if (/da/i.test(priceStr)) return `${total.toLocaleString()} DA`
-    if (/[\$€£]/.test(priceStr)) {
-      const symbol = priceStr.match(/[\$€£]/)?.[0] || ''
-      return `${symbol}${total.toLocaleString()}`
-    }
-    return `${total.toLocaleString()}`
+    const total = numeric * quantity + (deliveryFee || 0)
+    return `${total.toLocaleString('fr-FR')} دج`
   }
   return priceStr
 }
@@ -65,7 +61,33 @@ export async function processNewOrder(
   }
 
   const quantity = Math.max(1, input.quantity || 1)
-  const totalAmount = calculateTotal(input.productPrice, quantity)
+  const isFreeDelivery = Boolean(input.isFreeDelivery)
+  const deliveryFee =
+    typeof input.deliveryFee === 'number'
+      ? Math.max(0, input.deliveryFee)
+      : 0
+  const effectiveDeliveryFee = isFreeDelivery ? 0 : deliveryFee
+  const totalAmount = calculateTotal(
+    input.productPrice,
+    quantity,
+    effectiveDeliveryFee,
+  )
+
+  const homeDeliveryPrice =
+    input.homeDeliveryPrice ||
+    (isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : deliveryType === 'home delivery'
+        ? `${effectiveDeliveryFee} دج`
+        : '-')
+
+  const stopdeskPrice =
+    input.stopdeskPrice ||
+    (isFreeDelivery
+      ? 'مجاني (0 دج)'
+      : deliveryType === 'stopdesk'
+        ? `${effectiveDeliveryFee} دج`
+        : '-')
 
   // Generate unique order ID
   const timestamp = Date.now().toString(36).toUpperCase()
@@ -79,6 +101,10 @@ export async function processNewOrder(
     wilaya,
     commune,
     deliveryType,
+    deliveryFee: effectiveDeliveryFee,
+    homeDeliveryPrice,
+    stopdeskPrice,
+    isFreeDelivery,
     productId: input.productId,
     productTitle: input.productTitle,
     productPrice: input.productPrice,

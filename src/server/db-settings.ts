@@ -29,6 +29,7 @@ function mapDbToSettings(row: DbStorefrontSettings): StorefrontSettings {
     metaPixelId: row.metaPixelId || '',
     logoUrl: row.logoUrl || '',
     faviconUrl: row.faviconUrl || '',
+    deliveryRates: row.deliveryRates || DEFAULT_STOREFRONT_SETTINGS.deliveryRates,
     updatedAt: row.updatedAt.toISOString(),
   }
 }
@@ -44,6 +45,8 @@ function readFromFile(): StorefrontSettings {
         metaPixelId: parsed.metaPixelId || '',
         logoUrl: parsed.logoUrl || '',
         faviconUrl: parsed.faviconUrl || '',
+        deliveryRates:
+          parsed.deliveryRates || DEFAULT_STOREFRONT_SETTINGS.deliveryRates,
         socialLinks: {
           ...DEFAULT_STOREFRONT_SETTINGS.socialLinks,
           ...(parsed.socialLinks || {}),
@@ -77,6 +80,7 @@ async function ensureSeed(): Promise<void> {
       await db.execute(sql`
         ALTER TABLE storefront_settings ADD COLUMN IF NOT EXISTS logo_url text DEFAULT '';
         ALTER TABLE storefront_settings ADD COLUMN IF NOT EXISTS favicon_url text DEFAULT '';
+        ALTER TABLE storefront_settings ADD COLUMN IF NOT EXISTS delivery_rates jsonb;
       `)
     } catch {
       // Safe to ignore if table doesn't exist yet
@@ -105,6 +109,8 @@ async function ensureSeed(): Promise<void> {
         metaPixelId: initial.metaPixelId || '',
         logoUrl: initial.logoUrl || '',
         faviconUrl: initial.faviconUrl || '',
+        deliveryRates:
+          initial.deliveryRates || DEFAULT_STOREFRONT_SETTINGS.deliveryRates,
         updatedAt: new Date(),
       })
       writeToFile(initial)
@@ -174,6 +180,10 @@ export async function updateStorefrontSettings(
       settings.faviconUrl !== undefined
         ? settings.faviconUrl
         : current.faviconUrl || '',
+    deliveryRates:
+      settings.deliveryRates !== undefined
+        ? settings.deliveryRates
+        : current.deliveryRates || DEFAULT_STOREFRONT_SETTINGS.deliveryRates,
     socialLinks: {
       ...current.socialLinks,
       ...(settings.socialLinks || {}),
@@ -199,6 +209,7 @@ export async function updateStorefrontSettings(
         metaPixelId: updated.metaPixelId,
         logoUrl: updated.logoUrl,
         faviconUrl: updated.faviconUrl,
+        deliveryRates: updated.deliveryRates,
         updatedAt: now,
       })
       .onConflictDoUpdate({
@@ -216,6 +227,7 @@ export async function updateStorefrontSettings(
           metaPixelId: updated.metaPixelId,
           logoUrl: updated.logoUrl,
           faviconUrl: updated.faviconUrl,
+          deliveryRates: updated.deliveryRates,
           updatedAt: now,
         },
       })

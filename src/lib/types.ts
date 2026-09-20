@@ -37,6 +37,7 @@ export interface Product {
   ctaUrl?: string
   badge?: string
   published: boolean
+  freeDelivery?: boolean
   variants?: ProductVariant[]
   variantOptions?: ProductVariantOption[]
   createdAt: string
@@ -59,6 +60,24 @@ export function slugify(text: string): string {
 
 export type DeliveryType = 'stopdesk' | 'home delivery'
 
+export interface WilayaDeliveryRate {
+  homePrice?: number | null
+  stopdeskPrice?: number | null
+  active?: boolean
+}
+
+export interface DeliveryRatesConfig {
+  defaultHomePrice: number
+  defaultStopdeskPrice: number
+  wilayas?: Record<string, WilayaDeliveryRate>
+}
+
+export const DEFAULT_DELIVERY_RATES: DeliveryRatesConfig = {
+  defaultHomePrice: 600,
+  defaultStopdeskPrice: 400,
+  wilayas: {},
+}
+
 export interface OrderInput {
   fullName: string
   phone: string
@@ -69,6 +88,10 @@ export interface OrderInput {
   productTitle: string
   productPrice?: string
   quantity?: number
+  deliveryFee?: number
+  homeDeliveryPrice?: string
+  stopdeskPrice?: string
+  isFreeDelivery?: boolean
   notes?: string
   variantId?: string
   variantTitle?: string
@@ -115,6 +138,7 @@ export interface StorefrontSettings {
   metaPixelId?: string
   logoUrl?: string
   faviconUrl?: string
+  deliveryRates?: DeliveryRatesConfig
   updatedAt?: string
 }
 
@@ -142,4 +166,5 @@ export const DEFAULT_STOREFRONT_SETTINGS: StorefrontSettings = {
     twitter: '',
     linkedin: '',
   },
+  deliveryRates: DEFAULT_DELIVERY_RATES,
 }
