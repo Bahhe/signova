@@ -18,6 +18,7 @@ import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as PIndexRouteImport } from './routes/p/index'
@@ -68,6 +69,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardNewRoute = DashboardNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/users': typeof UsersRoute
+  '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/p/$slug': typeof PSlugRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/users': typeof UsersRoute
+  '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/p/$slug': typeof PSlugRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/users': typeof UsersRoute
+  '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/p/$slug': typeof PSlugRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/unauthorized'
     | '/users'
+    | '/dashboard/new'
     | '/dashboard/settings'
     | '/dashboard/users'
     | '/p/$slug'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/unauthorized'
     | '/users'
+    | '/dashboard/new'
     | '/dashboard/settings'
     | '/dashboard/users'
     | '/p/$slug'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/unauthorized'
     | '/users'
+    | '/dashboard/new'
     | '/dashboard/settings'
     | '/dashboard/users'
     | '/p/$slug'
@@ -259,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/new': {
+      id: '/dashboard/new'
+      path: '/new'
+      fullPath: '/dashboard/new'
+      preLoaderRoute: typeof DashboardNewRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/settings'
@@ -291,12 +310,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteChildren {
+  DashboardNewRoute: typeof DashboardNewRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardNewRoute: DashboardNewRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardUsersRoute: DashboardUsersRoute,
   DashboardIndexRoute: DashboardIndexRoute,

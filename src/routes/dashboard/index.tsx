@@ -1,9 +1,8 @@
 import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { Package, Search, Plus, Store, FilterX } from 'lucide-react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Package, Search, Plus, Store, FilterX, X } from 'lucide-react'
 import type { Product } from '#/lib/types'
 import { useProducts } from '#/lib/use-products'
-import { ProductForm } from '#/components/product-form'
 import { ProductCard } from '#/components/product-card'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { Input } from '#/components/ui/input'
@@ -30,7 +29,7 @@ export const Route = createFileRoute('/dashboard/')({
   },
   head: () => ({
     meta: [
-      { title: 'Products Studio | Signova Dashboard' },
+      { title: 'All Products | Signova Dashboard' },
       {
         name: 'description',
         content: 'Manage and customize your products and landing showcases.',
@@ -41,33 +40,22 @@ export const Route = createFileRoute('/dashboard/')({
 })
 
 function AdminDashboard() {
+  const navigate = useNavigate()
   const { session } = Route.useRouteContext()
   const { initialProducts } = Route.useLoaderData()
-  const { products, saveProduct, deleteProduct } = useProducts(initialProducts)
-  const [editingProduct, setEditingProduct] = React.useState<Product | null>(
-    null,
-  )
+  const { products, deleteProduct } = useProducts(initialProducts)
   const [search, setSearch] = React.useState('')
   const [selectedCategory, setSelectedCategory] = React.useState<string>('All')
-  const formRef = React.useRef<HTMLDivElement>(null)
-
-  const handleSave = async (product: Product, andView = false) => {
-    await saveProduct(product)
-    setEditingProduct(null)
-    if (andView) {
-      const productUrl = getShopUrl(`/${product.slug}`)
-      window.open(productUrl, '_blank')
-    }
-  }
 
   const handleEdit = (product: Product) => {
-    setEditingProduct(product)
-    formRef.current?.scrollIntoView({ behavior: 'smooth' })
+    void navigate({
+      to: '/dashboard/new',
+      search: { edit: product.id },
+    })
   }
 
   const handleNew = () => {
-    setEditingProduct(null)
-    formRef.current?.scrollIntoView({ behavior: 'smooth' })
+    void navigate({ to: '/dashboard/new' })
   }
 
   const filtered = React.useMemo(() => {
@@ -111,7 +99,7 @@ function AdminDashboard() {
               </span>
               <span className="text-xs text-muted-foreground hidden sm:inline">
                 •{' '}
-                {session?.user?.name
+                {session.user.name
                   ? `${session.user.name}'s Studio`
                   : 'Product Studio'}
               </span>
@@ -132,44 +120,52 @@ function AdminDashboard() {
               <Button
                 size="xs"
                 onClick={handleNew}
-                className="gap-1 h-8 text-xs"
+                className="gap-1 h-8 text-xs font-semibold"
               >
                 <Plus className="size-3.5" />
-                <span>New</span>
+                <span>New Product</span>
               </Button>
             </div>
           </header>
 
           {/* Main Container */}
-          <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-24 space-y-8 w-full flex-1">
-            {/* Form Section */}
-            <div ref={formRef}>
-              <ProductForm
-                key={editingProduct?.id || 'new'}
-                initialProduct={editingProduct}
-                existingProducts={products}
-                onSave={handleSave}
-                onCancel={
-                  editingProduct ? () => setEditingProduct(null) : undefined
-                }
-              />
+          <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-24 space-y-6 w-full flex-1">
+            {/* Page Title & Stats */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <Package className="size-6 text-primary" />
+                  <span>All Products</span>
+                </h1>
+                <p className="text-xs text-muted-foreground mt-1">
+                  View and manage all items in your store catalogue.
+                </p>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleNew}
+                className="gap-1.5 text-xs h-9 font-semibold shadow-xs self-start sm:self-auto"
+              >
+                <Plus className="size-4" />
+                <span>Add New Product</span>
+              </Button>
             </div>
 
-            {/* Products List Section */}
+            {/* Products Search & Filter Toolbar */}
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border border-border bg-card shadow-xs">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <Package className="size-4 text-muted-foreground" />
+                  <span className="text-xs font-semibold text-foreground">
                     Products ({filtered.length}
-                    {selectedCategory !== 'All' ? ` of ${products.length}` : ''}
-                    )
-                  </h2>
+                    {selectedCategory !== 'All' || search ? ` of ${products.length}` : ''})
+                  </span>
                   {selectedCategory !== 'All' && (
                     <button
                       type="button"
                       onClick={() => setSelectedCategory('All')}
                       className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                      title="Clear category filter"
                     >
                       <span>{selectedCategory}</span>
                       <FilterX className="size-3" />
@@ -177,19 +173,29 @@ function AdminDashboard() {
                   )}
                 </div>
 
-                {products.length > 3 && (
-                  <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder="Filter products..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="h-8 pl-8 text-xs"
-                    />
-                  </div>
-                )}
+                {/* Search Bar: Always shown */}
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search products by name, slug or description..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="h-8 pl-8 pr-7 text-xs bg-background"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      title="Clear search"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
+              {/* Products List */}
               {filtered.length > 0 ? (
                 <div className="space-y-2.5">
                   {filtered.map((product) => (
@@ -202,24 +208,41 @@ function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="p-8 text-center rounded-xl border border-dashed border-border text-xs text-muted-foreground space-y-2">
-                  <p>
+                <div className="p-12 text-center rounded-xl border border-dashed border-border text-xs text-muted-foreground space-y-3 bg-card/40">
+                  <Package className="size-8 mx-auto text-muted-foreground/50 stroke-1" />
+                  <p className="text-sm font-medium text-foreground">
                     {search || selectedCategory !== 'All'
-                      ? 'No products match your search or category filter.'
-                      : 'No products created yet. Use the form above to create your first product.'}
+                      ? 'No products match your search or filter'
+                      : 'No products added yet'}
                   </p>
-                  {(search || selectedCategory !== 'All') && (
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => {
-                        setSearch('')
-                        setSelectedCategory('All')
-                      }}
-                    >
-                      Clear Filter
-                    </Button>
-                  )}
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    {search || selectedCategory !== 'All'
+                      ? 'Try adjusting your search terms or clearing active filters.'
+                      : 'Get started by creating your first product to display on your storefront.'}
+                  </p>
+                  <div className="pt-2">
+                    {search || selectedCategory !== 'All' ? (
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => {
+                          setSearch('')
+                          setSelectedCategory('All')
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={handleNew}
+                        className="gap-1.5 text-xs font-semibold"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>Create First Product</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

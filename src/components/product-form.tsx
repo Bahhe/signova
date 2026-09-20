@@ -98,13 +98,13 @@ export function ProductForm({
   // Derived suggested categories from existing products and defaults
   const suggestedCategories = React.useMemo(() => {
     const defaults = [
-      'Workspace',
-      'Gear',
-      'Coffee',
-      'Electronics',
-      'Apparel',
-      'Accessories',
-      'Home',
+      'مساحة العمل',
+      'المعدات',
+      'القهوة',
+      'الإلكترونيات',
+      'الملابس',
+      'الإكسسوارات',
+      'المنزل',
     ]
     const fromExisting = existingProducts
       .map((p) => p.category)
@@ -113,12 +113,12 @@ export function ProductForm({
   }, [existingProducts])
 
   const suggestedBadges = [
-    'Best Seller',
-    'Staff Pick',
-    'Limited Run',
-    'New Arrival',
-    'On Sale',
-    'Featured',
+    'الأكثر مبيعاً',
+    'اختيار مميز',
+    'إصدار محدود',
+    'وصل حديثاً',
+    'تخفيض',
+    'منتج مميز',
   ]
 
   React.useEffect(() => {
@@ -663,7 +663,7 @@ export function ProductForm({
               htmlFor="prod-free-delivery"
               className="text-xs font-bold text-foreground cursor-pointer"
             >
-              توصيل مجاني لهذا المنتج (Free Delivery)
+              Free Delivery
             </Label>
             {freeDelivery && (
               <span className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">
@@ -672,7 +672,8 @@ export function ProductForm({
             )}
           </div>
           <p className="text-[11px] text-muted-foreground">
-            عند تفعيل هذا الخيار، سيكون التوصيل مجانياً (0 دج للمنزل واستلام المكتب) لهذا المنتج عند الطلب.
+            When this option is enabled, delivery for this product will be free
+            (0 DZD for home delivery and office pickup) upon ordering.
           </p>
         </div>
         <Switch
@@ -761,13 +762,15 @@ export function ProductForm({
         )}
       </div>
 
-      {/* 6. Product Variants & Options (خيارات ومتغيرات المنتج) */}
+      {/* 6. Product Variants & Options */}
       <div className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-2xs space-y-5">
-        <div className="flex items-center justify-between gap-4 pb-3 border-b border-border/80">
+        <div
+          className={`flex items-center justify-between gap-4 ${hasVariants && 'pb-3 border-b'} border-border/80`}
+        >
           <div className="space-y-0.5">
             <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
               <Layers className="size-4 text-primary" />
-              <span>Product Variants & Options (خيارات ومتغيرات المنتج)</span>
+              <span>Product Variants & Options </span>
             </h3>
             <p className="text-[11px] text-muted-foreground">
               Enable this if this product has multiple colors, sizes, models, or

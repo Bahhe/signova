@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   Package,
+  PlusCircle,
   Store,
   ExternalLink,
   LogOut,
@@ -33,7 +34,7 @@ import { Button } from '#/components/ui/button'
 
 interface DashboardSidebarProps {
   products: Product[]
-  currentRoute?: 'products' | 'users' | 'settings'
+  currentRoute?: 'products' | 'new-product' | 'users' | 'settings'
   selectedCategory?: string
   onSelectCategory?: (category: string) => void
   onNewProduct?: () => void
@@ -143,6 +144,19 @@ export function DashboardSidebar({
                   </Link>
                 </SidebarMenuButton>
                 <SidebarMenuBadge>{products.length}</SidebarMenuBadge>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={currentRoute === 'new-product'}
+                  tooltip="New Product"
+                >
+                  <Link to="/dashboard/new">
+                    <PlusCircle className="size-4" />
+                    <span>New Product</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
