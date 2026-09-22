@@ -230,7 +230,11 @@ export function DashboardSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="View Showcase">
-                  <a href={getShopUrl('/')} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={getShopUrl('/')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <Store className="size-4" />
                     <span>View Showcase</span>
                     <ExternalLink className="ml-auto size-3 opacity-60 group-data-[collapsible=icon]:hidden" />
@@ -271,20 +275,15 @@ export function DashboardSidebar({
                   {session.user.email}
                 </span>
               </div>
+              <Button
+                variant="outline"
+                onClick={handleSignOut}
+                size="icon"
+                title="Sign out"
+              >
+                <LogOut className="size-3.5 shrink-0" />
+              </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={handleSignOut}
-              className="w-full justify-start h-8 gap-2 text-xs text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 truncate"
-              title="Sign out"
-            >
-              <LogOut className="size-3.5 shrink-0" />
-              <span className="group-data-[collapsible=icon]:hidden truncate">
-                Sign Out
-              </span>
-            </Button>
           </div>
         ) : (
           <div className="flex items-center justify-center py-2 text-xs text-muted-foreground">
