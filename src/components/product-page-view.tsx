@@ -79,8 +79,8 @@ export function ProductPageView({
   const mouseStartX = React.useRef(0)
 
   const images = product.images
-  const currentImage = (images[selectedImageIndex] ??
-    images[0]) as ProductImage | undefined
+  const currentImage = (images[selectedImageIndex] ?? images[0]) as
+    ProductImage | undefined
 
   React.useEffect(() => {
     if (selectedImageIndex >= images.length) {
@@ -412,7 +412,7 @@ export function ProductPageView({
                 {/* Left Button (Go to Previous Image) */}
                 <button
                   type="button"
-                  onClick={prevImage}
+                  onClick={nextImage}
                   className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/85 hover:bg-background text-foreground backdrop-blur-xs transition-opacity opacity-0 group-hover:opacity-100 shadow-md z-10 hover:scale-105 active:scale-95"
                   title="الصورة السابقة"
                 >
@@ -422,7 +422,7 @@ export function ProductPageView({
                 {/* Right Button (Go to Next Image) */}
                 <button
                   type="button"
-                  onClick={nextImage}
+                  onClick={prevImage}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/85 hover:bg-background text-foreground backdrop-blur-xs transition-opacity opacity-0 group-hover:opacity-100 shadow-md z-10 hover:scale-105 active:scale-95"
                   title="الصورة التالية"
                 >
@@ -762,11 +762,11 @@ export function ProductPageView({
                 {/* Left Arrow: Previous */}
                 <button
                   type="button"
-                  onClick={prevImage}
+                  onClick={nextImage}
                   className="p-1.5 rounded-full bg-white/20 hover:bg-white/30"
                   title="السابق"
                 >
-                  <ChevronLeft className="size-5" />
+                  <ChevronRight className="size-5" />
                 </button>
                 <span className="text-xs font-sans" dir="ltr">
                   {selectedImageIndex + 1} / {images.length}
@@ -774,11 +774,11 @@ export function ProductPageView({
                 {/* Right Arrow: Next */}
                 <button
                   type="button"
-                  onClick={nextImage}
+                  onClick={prevImage}
                   className="p-1.5 rounded-full bg-white/20 hover:bg-white/30"
                   title="التالي"
                 >
-                  <ChevronRight className="size-5" />
+                  <ChevronLeft className="size-5" />
                 </button>
               </div>
             )}
