@@ -79,7 +79,7 @@ export function OrderForm({
   const [selectedWilaya, setSelectedWilaya] = React.useState('')
   const [selectedCommune, setSelectedCommune] = React.useState('')
   const [deliveryType, setDeliveryType] =
-    React.useState<DeliveryType>('home delivery')
+    React.useState<DeliveryType>('stopdesk')
   const [quantity, setQuantity] = React.useState(1)
   const [notes, setNotes] = React.useState('')
 
@@ -94,8 +94,8 @@ export function OrderForm({
   // Wilaya Shipping Rates calculation
   const wilayaRates = React.useMemo(() => {
     const config = deliveryRates || DEFAULT_DELIVERY_RATES
-    const defaultHome = config.defaultHomePrice ?? 600
-    const defaultDesk = config.defaultStopdeskPrice ?? 400
+    const defaultHome = config.defaultHomePrice
+    const defaultDesk = config.defaultStopdeskPrice
 
     if (!selectedWilaya) {
       return {
@@ -108,11 +108,11 @@ export function OrderForm({
 
     const custom = config.wilayas?.[selectedWilaya]
     const homePrice =
-      custom?.homePrice !== undefined && custom?.homePrice !== null
+      custom?.homePrice !== undefined && custom.homePrice !== null
         ? custom.homePrice
         : defaultHome
     const stopdeskPrice =
-      custom?.stopdeskPrice !== undefined && custom?.stopdeskPrice !== null
+      custom?.stopdeskPrice !== undefined && custom.stopdeskPrice !== null
         ? custom.stopdeskPrice
         : defaultDesk
     const isAvailable = custom?.active !== false
@@ -121,8 +121,8 @@ export function OrderForm({
       homePrice,
       stopdeskPrice,
       isCustom:
-        (custom?.homePrice !== undefined && custom?.homePrice !== null) ||
-        (custom?.stopdeskPrice !== undefined && custom?.stopdeskPrice !== null),
+        (custom?.homePrice !== undefined && custom.homePrice !== null) ||
+        (custom?.stopdeskPrice !== undefined && custom.stopdeskPrice !== null),
       isAvailable,
     }
   }, [deliveryRates, selectedWilaya])
@@ -267,7 +267,10 @@ export function OrderForm({
 
       if (res.success) {
         const confirmedOrderId = res.orderId || 'ORD-CONFIRMED'
-        const numericTotal = grandTotalNumeric > 0 ? grandTotalNumeric : unitPriceNumeric * quantity
+        const numericTotal =
+          grandTotalNumeric > 0
+            ? grandTotalNumeric
+            : unitPriceNumeric * quantity
 
         setOrderSuccess({
           orderId: confirmedOrderId,
@@ -307,7 +310,10 @@ export function OrderForm({
         const data = await apiRes.json()
         if (apiRes.ok && data.success) {
           const confirmedOrderId = data.orderId || 'ORD-CONFIRMED'
-          const numericTotal = grandTotalNumeric > 0 ? grandTotalNumeric : unitPriceNumeric * quantity
+          const numericTotal =
+            grandTotalNumeric > 0
+              ? grandTotalNumeric
+              : unitPriceNumeric * quantity
 
           setOrderSuccess({
             orderId: confirmedOrderId,
@@ -354,7 +360,10 @@ export function OrderForm({
         const data = await apiRes.json()
         if (apiRes.ok && data.success) {
           const confirmedOrderId = data.orderId || 'ORD-CONFIRMED'
-          const numericTotal = grandTotalNumeric > 0 ? grandTotalNumeric : unitPriceNumeric * quantity
+          const numericTotal =
+            grandTotalNumeric > 0
+              ? grandTotalNumeric
+              : unitPriceNumeric * quantity
 
           setOrderSuccess({
             orderId: confirmedOrderId,
@@ -701,50 +710,6 @@ export function OrderForm({
           </Label>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Home Delivery */}
-            <label
-              className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                deliveryType === 'home delivery'
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                  : 'border-border bg-card hover:bg-muted/40'
-              }`}
-            >
-              <input
-                type="radio"
-                name="deliveryType"
-                value="home delivery"
-                checked={deliveryType === 'home delivery'}
-                onChange={() => setDeliveryType('home delivery')}
-                className="mt-1 text-primary focus:ring-primary"
-              />
-              <div className="flex-1">
-                <div className="flex items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Truck className="size-4 text-primary" />
-                    <span className="text-xs font-bold text-foreground">
-                      توصيل إلى باب المنزل
-                    </span>
-                  </div>
-                  {isFreeDelivery ? (
-                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      مجاني (0 دج)
-                    </span>
-                  ) : selectedWilaya ? (
-                    <span className="text-xs font-bold text-primary">
-                      + {wilayaRates.homePrice} دج
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-muted-foreground">
-                      {wilayaRates.homePrice} دج
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  توصيل سريع ومباشر إلى عنوانك الشخصي أو مقر العمل
-                </p>
-              </div>
-            </label>
-
             {/* Stop Desk */}
             <label
               className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -785,6 +750,50 @@ export function OrderForm({
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   استلم طردك من أقرب نقطة توزيع أو مكتب توصيل في ولايتك
+                </p>
+              </div>
+            </label>
+
+            {/* Home Delivery */}
+            <label
+              className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                deliveryType === 'home delivery'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  : 'border-border bg-card hover:bg-muted/40'
+              }`}
+            >
+              <input
+                type="radio"
+                name="deliveryType"
+                value="home delivery"
+                checked={deliveryType === 'home delivery'}
+                onChange={() => setDeliveryType('home delivery')}
+                className="mt-1 text-primary focus:ring-primary"
+              />
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="size-4 text-primary" />
+                    <span className="text-xs font-bold text-foreground">
+                      توصيل إلى باب المنزل
+                    </span>
+                  </div>
+                  {isFreeDelivery ? (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      مجاني (0 دج)
+                    </span>
+                  ) : selectedWilaya ? (
+                    <span className="text-xs font-bold text-primary">
+                      + {wilayaRates.homePrice} دج
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">
+                      {wilayaRates.homePrice} دج
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  توصيل سريع ومباشر إلى عنوانك الشخصي أو مقر العمل
                 </p>
               </div>
             </label>
@@ -837,7 +846,7 @@ export function OrderForm({
         <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-2.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>المنتج المحدد:</span>
-            <span className="font-semibold text-foreground truncate max-w-[200px] sm:max-w-xs">
+            <span className="font-semibold text-foreground truncate max-w-50 sm:max-w-xs">
               {product.title}
             </span>
           </div>
@@ -879,7 +888,8 @@ export function OrderForm({
             <span className="text-muted-foreground flex items-center gap-1">
               <Truck className="size-3 text-primary" />
               <span>
-                رسوم التوصيل ({deliveryType === 'home delivery' ? 'للمنزل' : 'Stop Desk'}):
+                رسوم التوصيل (
+                {deliveryType === 'home delivery' ? 'للمنزل' : 'Stop Desk'}):
               </span>
             </span>
 

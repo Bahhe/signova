@@ -4,6 +4,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { Toaster } from '#/components/ui/sonner'
+import { ThemeProvider } from '#/components/theme-provider'
 import { NotFound } from '#/components/not-found'
 import { getStorefrontSettingsServerFn } from '#/lib/server-settings'
 import { useStorefrontSettings } from '#/lib/use-storefront-settings'
@@ -22,7 +23,7 @@ export const Route = createRootRoute({
   head: ({ loaderData }) => {
     const faviconUrl =
       loaderData?.settings?.faviconUrl?.trim() || '/favicon.ico'
-    const storeName = loaderData?.settings?.storeName?.trim() || 'SignovaPub'
+    const storeName = loaderData?.settings?.storeName.trim() || 'SignovaPub'
     return {
       meta: [
         {
@@ -60,12 +61,12 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const loaderData = Route.useLoaderData()
-  const { settings } = useStorefrontSettings(loaderData?.settings)
+  const { settings } = useStorefrontSettings(loaderData.settings)
 
   // Dynamically update document favicon on client-side when changed
   React.useEffect(() => {
     if (typeof document === 'undefined') return
-    const fav = settings?.faviconUrl?.trim() || '/favicon.ico'
+    const fav = settings.faviconUrl?.trim() || '/favicon.ico'
     let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
     if (!link) {
       link = document.createElement('link')
@@ -75,32 +76,29 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     if (link.getAttribute('href') !== fav) {
       link.href = fav
     }
-  }, [settings?.faviconUrl])
+  }, [settings.faviconUrl])
 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();`,
-          }}
-        />
       </head>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster richColors position="top-right" closeButton />
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        <ThemeProvider defaultTheme="light" storageKey="theme">
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster richColors position="top-center" closeButton />
+          <TanStackDevtools
+            config={{
+              position: 'bottom-right',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>

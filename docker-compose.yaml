@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: signova
+    # volumes:
+    #   - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: >
+      mini
+      -dir=/data
+      -s3
+      -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - '9333:9333'
+      - '8080:8080'
+      - '8333:8333'
+    volumes:
+      - ./seaweedfs/data:/data
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+volumes:
+  postgres_data:
+  seaweedfs_data:

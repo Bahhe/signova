@@ -11,19 +11,20 @@
   "metaPixelId": "",
   "logoUrl": "http://localhost:8333/signovas3/1789818766525-mldn3w-android-chrome-512x512png.png",
   "faviconUrl": "http://localhost:8333/signovas3/1789818626669-tycyi5-faviconico.ico",
+  "deliveryRates": {
+    "defaultHomePrice": 600,
+    "defaultStopdeskPrice": 0,
+    "wilayas": {}
+  },
   "socialLinks": {
     "tiktok": "https://tiktok.com",
     "twitter": "",
     "youtube": "",
     "facebook": "https://facebook.com",
     "linkedin": "",
+    "telegram": "https://t.me",
     "whatsapp": "+213555012345",
     "instagram": "https://instagram.com"
   },
-  "deliveryRates": {
-    "defaultHomePrice": 600,
-    "defaultStopdeskPrice": 400,
-    "wilayas": {}
-  },
-  "updatedAt": "2026-09-19T11:52:57.216Z"
+  "updatedAt": "2026-09-22T12:02:01.352Z"
 }

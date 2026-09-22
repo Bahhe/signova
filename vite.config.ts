@@ -33,6 +33,7 @@ const config = defineConfig({
     watch: {
       ignored: ['**/data/**', '**/.git/**'],
     },
+    allowedHosts: ['rich-approve-hose-dozens.trycloudflare.com'],
   },
   plugins: [
     signovaApiPlugin(),
