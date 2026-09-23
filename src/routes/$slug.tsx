@@ -44,8 +44,7 @@ export const Route = createFileRoute('/$slug')({
   },
   head: ({ loaderData }) => {
     const serverProd = loaderData?.serverProduct
-    const storeName =
-      loaderData?.serverSettings?.storeName?.trim() || 'Signova'
+    const storeName = loaderData?.serverSettings?.storeName.trim() || 'Signova'
     const title = serverProd?.title
       ? `${serverProd.title} | ${storeName}`
       : `المنتج | ${storeName}`
@@ -110,10 +109,5 @@ function ProductPageSlugRoute() {
     )
   }
 
-  return (
-    <ProductPageView
-      product={product}
-      settings={serverSettings}
-    />
-  )
+  return <ProductPageView product={product} settings={serverSettings} />
 }

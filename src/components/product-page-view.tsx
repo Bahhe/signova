@@ -43,6 +43,9 @@ interface ProductPageViewProps {
   isAdmin?: boolean
 }
 
+// Maximum pointer movement (px) still considered a tap/click rather than a drag/swipe
+const TAP_MOVE_TOLERANCE = 8
+
 export function ProductPageView({
   product,
   settings,
@@ -77,6 +80,9 @@ export function ProductPageView({
   const touchStartY = React.useRef<number | null>(null)
   const isMouseDown = React.useRef(false)
   const mouseStartX = React.useRef(0)
+  // Becomes true as soon as the pointer moves, so the trailing click of a
+  // drag/swipe gesture is not mistaken for a tap that opens the lightbox
+  const hasPointerMoved = React.useRef(false)
 
   const images = product.images
   const currentImage = (images[selectedImageIndex] ?? images[0]) as
@@ -193,6 +199,7 @@ export function ProductPageView({
 
   // Touch handlers for mobile swipe
   const handleTouchStart = (e: React.TouchEvent) => {
+    hasPointerMoved.current = false
     if (images.length <= 1) return
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -207,6 +214,13 @@ export function ProductPageView({
       return
     const diffX = e.touches[0].clientX - touchStartX.current
     const diffY = e.touches[0].clientY - touchStartY.current
+
+    if (
+      Math.abs(diffX) > TAP_MOVE_TOLERANCE ||
+      Math.abs(diffY) > TAP_MOVE_TOLERANCE
+    ) {
+      hasPointerMoved.current = true
+    }
 
     // Only swipe if movement is predominantly horizontal
     if (Math.abs(diffX) > Math.abs(diffY)) {
@@ -229,6 +243,7 @@ export function ProductPageView({
 
   // Mouse handlers for desktop dragging
   const handleMouseDown = (e: React.MouseEvent) => {
+    hasPointerMoved.current = false
     if (images.length <= 1) return
     isMouseDown.current = true
     mouseStartX.current = e.clientX
@@ -237,6 +252,9 @@ export function ProductPageView({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isMouseDown.current || images.length <= 1) return
     const diffX = e.clientX - mouseStartX.current
+    if (Math.abs(diffX) > TAP_MOVE_TOLERANCE) {
+      hasPointerMoved.current = true
+    }
     setDragOffset(diffX)
   }
 
@@ -255,6 +273,26 @@ export function ProductPageView({
   const handleMouseLeave = () => {
     if (isMouseDown.current) {
       handleMouseUp()
+    }
+  }
+
+  // Tapping / clicking the image itself maximizes it.
+  // This is essential on touch devices where there is no hover to reveal
+  // the maximize button (and the buttons are hidden on small screens).
+  const handleImageActivate = () => {
+    setLightboxOpen(true)
+  }
+
+  const handleImageClick = () => {
+    // Ignore the click that trails a drag/swipe gesture
+    if (hasPointerMoved.current) return
+    handleImageActivate()
+  }
+
+  const handleImageKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleImageActivate()
     }
   }
 
@@ -285,7 +323,7 @@ export function ProductPageView({
                 <img
                   src={settings.logoUrl}
                   alt={settings.storeName || 'Store Logo'}
-                  className="h-8 w-auto max-w-[120px] object-contain rounded-md"
+                  className="h-8 w-auto max-w-30 object-contain rounded-md"
                 />
               ) : (
                 <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -374,6 +412,11 @@ export function ProductPageView({
             {currentImage ? (
               <div
                 className="h-full w-full flex items-center justify-center will-change-transform"
+                role="button"
+                tabIndex={0}
+                aria-label="تكبير الصورة"
+                onClick={handleImageClick}
+                onKeyDown={handleImageKeyDown}
                 style={{
                   transform: dragOffset
                     ? `translateX(${dragOffset}px)`
@@ -400,8 +443,9 @@ export function ProductPageView({
               <button
                 type="button"
                 onClick={() => setLightboxOpen(true)}
-                className="absolute top-3 start-3 p-1.5 rounded-lg bg-background/80 hover:bg-background text-foreground backdrop-blur-xs transition-opacity opacity-0 group-hover:opacity-100 shadow-xs z-10"
+                className="absolute top-3 inset-s-3 p-1.5 rounded-lg bg-background/80 hover:bg-background text-foreground backdrop-blur-xs transition-opacity opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 shadow-xs z-10"
                 title="تكبير الصورة"
+                aria-label="تكبير الصورة"
               >
                 <Maximize2 className="size-4" />
               </button>
@@ -433,7 +477,7 @@ export function ProductPageView({
 
             {images.length > 0 && (
               <div
-                className="absolute bottom-3 end-3 px-2 py-0.5 rounded-md bg-background/80 backdrop-blur-xs border border-border/60 text-[11px] font-medium font-sans z-10 pointer-events-none"
+                className="absolute bottom-3 inset-e-3 px-2 py-0.5 rounded-md bg-background/80 backdrop-blur-xs border border-border/60 text-[11px] font-medium font-sans z-10 pointer-events-none"
                 dir="ltr"
               >
                 {selectedImageIndex + 1} / {images.length}
@@ -463,7 +507,7 @@ export function ProductPageView({
                       className="h-full w-full object-cover select-none pointer-events-none"
                       draggable={false}
                     />
-                    <span className="absolute bottom-1 start-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-black/70 text-white leading-tight font-sans">
+                    <span className="absolute bottom-1 inset-s-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-black/70 text-white leading-tight font-sans">
                       #{idx + 1}
                     </span>
                   </button>
@@ -740,7 +784,7 @@ export function ProductPageView({
             <button
               type="button"
               onClick={() => setLightboxOpen(false)}
-              className="absolute -top-12 start-0 p-2 text-white/80 hover:text-white rounded-full bg-white/10"
+              className="absolute -top-12 inset-s-0 p-2 text-white/80 hover:text-white rounded-full bg-white/10"
               title="إغلاق"
             >
               <X className="size-6" />

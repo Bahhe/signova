@@ -8,7 +8,6 @@ import {
   Star,
   Maximize2,
   X,
-  Cloud,
   AlertCircle,
   RotateCw,
   FileWarning,
@@ -167,7 +166,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
     if (!file) {
       // If we don't have the original File, check if the image has a data URL to re-upload
       const target = images.find((img) => img.id === id)
-      if (target?.url?.startsWith('data:image/')) {
+      if (target?.url.startsWith('data:image/')) {
         void uploadBase64Directly(id, target.url, target.name)
       }
       return
@@ -241,9 +240,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDraggingOver(false)
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      void handleFiles(e.dataTransfer.files)
-    }
+    // if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    void handleFiles(e.dataTransfer.files)
+    // }
   }
 
   // HTML5 Drag-and-drop reordering between items
@@ -308,9 +307,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
   // Delete image
   const removeImage = (index: number) => {
     const target = images[index]
-    if (target) {
-      fileMapRef.current.delete(target.id)
-    }
+    // if (target) {
+    fileMapRef.current.delete(target.id)
+    // }
     const updated = images.filter((_, i) => i !== index)
     onChange(updated)
     toast.info('Image removed.')
@@ -351,8 +350,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Clear all images?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to remove all {images.length} images from
-                  this product? You will need to upload or select them again.
+                  Are you sure you want to remove all {images.length} images
+                  from this product? You will need to upload or select them
+                  again.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -447,13 +447,6 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
             const isUploading = Boolean(img.isUploading)
             const hasError = Boolean(img.error)
             const isBase64 = img.url.startsWith('data:image/')
-            const isS3 =
-              !isBase64 &&
-              (img.url.includes('/api/images/') ||
-                img.url.includes('signovas3') ||
-                img.url.includes('8333') ||
-                img.url.includes('8888') ||
-                img.url.includes('s3'))
 
             return (
               <div
@@ -539,15 +532,6 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                           className="text-[10px] font-semibold bg-background/80 shadow-xs px-1.5 py-0"
                         >
                           #{idx + 1}
-                        </Badge>
-                      )}
-
-                      {isS3 && (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] px-1 py-0 bg-background/80 text-sky-600 dark:text-sky-400 border-sky-500/30 gap-0.5"
-                        >
-                          <Cloud className="size-2.5" /> S3
                         </Badge>
                       )}
                     </div>

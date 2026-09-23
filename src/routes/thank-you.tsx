@@ -183,7 +183,7 @@ function ThankYouPageRoute() {
 
   const storePhone = serverSettings?.phone || '+213 555 01 23 45'
   const whatsappNumber =
-    serverSettings?.socialLinks?.whatsapp?.replace(/[^0-9]/g, '') ||
+    serverSettings?.socialLinks.whatsapp?.replace(/[^0-9]/g, '') ||
     storePhone.replace(/[^0-9]/g, '')
 
   return (
@@ -202,7 +202,7 @@ function ThankYouPageRoute() {
                 <img
                   src={serverSettings.logoUrl}
                   alt={serverSettings.storeName || 'Store Logo'}
-                  className="h-8 w-auto max-w-[120px] object-contain rounded-md"
+                  className="h-8 w-auto max-w-30 object-contain rounded-md"
                 />
               ) : (
                 <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs">
@@ -324,7 +324,8 @@ function ThankYouPageRoute() {
                       {search.deliveryFee !== undefined && (
                         <span className="text-xs font-medium text-foreground">
                           • التوصيل:{' '}
-                          {search.isFreeDelivery === 'true' || search.deliveryFee === '0' ? (
+                          {search.isFreeDelivery === 'true' ||
+                          search.deliveryFee === '0' ? (
                             <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                               مجاني (0 دج)
                             </span>

@@ -92,7 +92,7 @@ export function DashboardSidebar({
       {/* Brand Header */}
       <SidebarHeader className="border-b border-border/60 p-3">
         <div className="flex items-center gap-2.5">
-          {settings?.logoUrl ? (
+          {settings.logoUrl ? (
             <img
               src={settings.logoUrl}
               alt={settings.storeName || 'Store Logo'}
@@ -100,14 +100,14 @@ export function DashboardSidebar({
             />
           ) : (
             <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-              {settings?.storeName
+              {settings.storeName
                 ? settings.storeName.charAt(0).toUpperCase()
                 : 'S'}
             </div>
           )}
           <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
             <span className="font-bold text-sm tracking-tight truncate leading-tight">
-              {settings?.storeName || 'SignovaPub'}
+              {settings.storeName || 'SignovaPub'}
             </span>
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
               Admin Studio

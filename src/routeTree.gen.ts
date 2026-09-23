@@ -13,10 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
-import { Route as UsersRouteImport } from './routes/users'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
@@ -44,11 +42,6 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ThankYouRoute = ThankYouRouteImport.update({
   id: '/thank-you',
   path: '/thank-you',
@@ -57,11 +50,6 @@ const ThankYouRoute = ThankYouRouteImport.update({
 const UnauthorizedRoute = UnauthorizedRouteImport.update({
   id: '/unauthorized',
   path: '/unauthorized',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -100,10 +88,8 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
-  '/users': typeof UsersRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/users': typeof DashboardUsersRoute
@@ -115,10 +101,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
-  '/users': typeof UsersRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/users': typeof DashboardUsersRoute
@@ -132,10 +116,8 @@ export interface FileRoutesById {
   '/$slug': typeof SlugRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/thank-you': typeof ThankYouRoute
   '/unauthorized': typeof UnauthorizedRoute
-  '/users': typeof UsersRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/users': typeof DashboardUsersRoute
@@ -150,10 +132,8 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/dashboard'
     | '/login'
-    | '/settings'
     | '/thank-you'
     | '/unauthorized'
-    | '/users'
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/dashboard/users'
@@ -165,10 +145,8 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/login'
-    | '/settings'
     | '/thank-you'
     | '/unauthorized'
-    | '/users'
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/dashboard/users'
@@ -181,10 +159,8 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/dashboard'
     | '/login'
-    | '/settings'
     | '/thank-you'
     | '/unauthorized'
-    | '/users'
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/dashboard/users'
@@ -198,10 +174,8 @@ export interface RootRouteChildren {
   SlugRoute: typeof SlugRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
-  SettingsRoute: typeof SettingsRoute
   ThankYouRoute: typeof ThankYouRoute
   UnauthorizedRoute: typeof UnauthorizedRoute
-  UsersRoute: typeof UsersRoute
   PSlugRoute: typeof PSlugRoute
   PIndexRoute: typeof PIndexRoute
 }
@@ -236,13 +210,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/thank-you': {
       id: '/thank-you'
       path: '/thank-you'
@@ -255,13 +222,6 @@ declare module '@tanstack/react-router' {
       path: '/unauthorized'
       fullPath: '/unauthorized'
       preLoaderRoute: typeof UnauthorizedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -332,10 +292,8 @@ const rootRouteChildren: RootRouteChildren = {
   SlugRoute: SlugRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
-  SettingsRoute: SettingsRoute,
   ThankYouRoute: ThankYouRoute,
   UnauthorizedRoute: UnauthorizedRoute,
-  UsersRoute: UsersRoute,
   PSlugRoute: PSlugRoute,
   PIndexRoute: PIndexRoute,
 }

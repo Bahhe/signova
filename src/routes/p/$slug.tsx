@@ -16,7 +16,7 @@ function RedirectToShopProduct() {
   }, [slug])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground text-sm text-muted-foreground font-mono">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground text-sm font-mono">
       Redirecting to product...
     </div>
   )

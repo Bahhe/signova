@@ -112,7 +112,9 @@ export function BrandAssetUploader({
       const finalUrl = uploadedUrl || base64Data
       onChange(finalUrl)
       setDirectUrl(finalUrl)
-      toast.success(`${type === 'logo' ? 'Logo' : 'Favicon'} updated successfully.`)
+      toast.success(
+        `${type === 'logo' ? 'Logo' : 'Favicon'} updated successfully.`,
+      )
     } catch (err: any) {
       console.error('Failed to process asset file:', err)
       const errText = err?.message || 'Failed to process image file'
@@ -146,10 +148,8 @@ export function BrandAssetUploader({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) {
-      void handleProcessFile(file)
-    }
+    const file = e.dataTransfer.files[0]
+    void handleProcessFile(file)
   }
 
   const handleClear = () => {
@@ -282,26 +282,26 @@ export function BrandAssetUploader({
           {type === 'logo' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Light background preview */}
-              <div className="rounded-lg border border-border/70 p-3 bg-white text-zinc-900 flex flex-col items-center justify-center gap-2 min-h-[90px] relative group">
+              <div className="rounded-lg border border-border/70 p-3 bg-white text-zinc-900 flex flex-col items-center justify-center gap-2 min-h-22.5 relative group">
                 <span className="absolute top-1.5 left-2 text-[10px] font-medium text-zinc-400">
                   Light Theme
                 </span>
                 <img
                   src={value}
                   alt="Store Logo Preview"
-                  className="max-h-12 max-w-[180px] object-contain"
+                  className="max-h-12 max-w-45 object-contain"
                 />
               </div>
 
               {/* Dark background preview */}
-              <div className="rounded-lg border border-border/70 p-3 bg-zinc-950 text-white flex flex-col items-center justify-center gap-2 min-h-[90px] relative group">
+              <div className="rounded-lg border border-border/70 p-3 bg-zinc-950 text-white flex flex-col items-center justify-center gap-2 min-h-22.5 relative group">
                 <span className="absolute top-1.5 left-2 text-[10px] font-medium text-zinc-500">
                   Dark Theme
                 </span>
                 <img
                   src={value}
                   alt="Store Logo Preview Dark"
-                  className="max-h-12 max-w-[180px] object-contain"
+                  className="max-h-12 max-w-45 object-contain"
                 />
               </div>
             </div>
@@ -319,7 +319,7 @@ export function BrandAssetUploader({
 
               {/* Browser chrome tab mockup */}
               <div className="bg-muted/60 rounded-lg p-2 flex items-center gap-3 border border-border/50">
-                <div className="bg-card border border-border/80 rounded-t-md px-3 py-1.5 flex items-center gap-2 shadow-xs max-w-[240px] flex-1">
+                <div className="bg-card border border-border/80 rounded-t-md px-3 py-1.5 flex items-center gap-2 shadow-xs max-w-60 flex-1">
                   <img
                     src={value}
                     alt="Favicon Preview"

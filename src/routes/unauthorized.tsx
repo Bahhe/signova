@@ -93,7 +93,7 @@ function UnauthorizedPage() {
                 <span className="text-muted-foreground font-medium">
                   Signed in as:
                 </span>
-                <span className="font-semibold text-foreground truncate max-w-[200px]">
+                <span className="font-semibold text-foreground truncate max-w-50">
                   {session.user.email}
                 </span>
               </div>

@@ -350,7 +350,8 @@ export function ProductForm({
     }
 
     if (images.some((img) => img.error)) {
-      const err = 'One or more images failed to upload to storage. Please retry or remove them before saving.'
+      const err =
+        'One or more images failed to upload to storage. Please retry or remove them before saving.'
       setValidationError(err)
       toast.error(err)
       return false
@@ -358,7 +359,8 @@ export function ProductForm({
 
     if (hasVariants) {
       if (variants.length === 0) {
-        const err = 'Please configure at least one variant or disable the variants toggle.'
+        const err =
+          'Please configure at least one variant or disable the variants toggle.'
         setValidationError(err)
         toast.error(err)
         return false
@@ -910,7 +912,7 @@ export function ProductForm({
                           </span>
                         ))}
 
-                        <div className="flex items-center gap-1.5 flex-1 min-w-[160px]">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-40">
                           <Input
                             placeholder="Add value (e.g. أسود, S, M...) and press Enter"
                             value={newOptionValueInputs[opt.id] || ''}

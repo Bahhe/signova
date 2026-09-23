@@ -105,21 +105,21 @@ function LoginPage() {
         <header className="border-b border-border bg-card/60 backdrop-blur-md">
           <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5">
-              {settings?.logoUrl ? (
+              {settings.logoUrl ? (
                 <img
                   src={settings.logoUrl}
                   alt={settings.storeName || 'Store Logo'}
-                  className="h-8 w-auto max-w-[120px] object-contain rounded-md"
+                  className="h-8 w-auto max-w-30 object-contain rounded-md"
                 />
               ) : (
                 <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                  {settings?.storeName
+                  {settings.storeName
                     ? settings.storeName.charAt(0).toUpperCase()
                     : 'S'}
                 </div>
               )}
               <span className="font-bold text-base tracking-tight">
-                {settings?.storeName || 'Signova'}
+                {settings.storeName || 'Signova'}
               </span>
             </a>
 
